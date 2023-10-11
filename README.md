@@ -1,11 +1,47 @@
-# Switch SMB Client
+# ezRemote Client
 
-Simple SMB client for the Switch. Allows you to transfer files between the Switch and your Windows Shares, Linux SMB Shares and NAS SMB shares
+ezRemote Client is a File Manager application that allows you to connect the Switch to remote FTP, SMB, WebDAV servers to transfer  and manage files. The interface is inspired by Filezilla client which provides a commander like GUI.
 
 ![Preview](/screenshot.jpg)
 
-## Installation
-Copy the **switch-smb-client.nro** in to the folder **/switch/switch-smb-client** of the SD card. Install the forwarder NSP **switch-smb-client.nsp**.
+## Usage
+To distinguish between FTP, SMB, WebDAV, the URL must be prefix with **ftp://**, **smb://**, **webdav://**, **webdavs://**
+
+ - The url format for FTP is
+   ```
+   ftp://hostname[:port]
+
+     - hostname can be the textual hostname or an IP address. hostname is required
+     - port is optional and defaults to 21(ftp) if not provided
+   ```
+
+ - The url format for SMB is
+   ```
+   smb://hostname[:port]/sharename
+
+     - hostname can be the textual hostname or an IP address. hostname is required
+     - port is optional and defaults to 445 if not provided
+     - sharename is required
+   ```
+
+ - The url format for WebDAV is
+   ```
+   webdav://hostname[:port]/[url_path]
+   webdavs://hostname[:port]/[url_path]
+
+     - hostname can be the textual hostname or an IP address. hostname is required
+     - port is optional and defaults to 80(webdav) and 443(webdavs) if not provided
+     - url_path is optional based on your WebDAV hosting requiremets
+   ```
+  
+Tested with following WebDAV server:
+ - **(Recommeded)** [RClone](https://rclone.org/) - For hosting your own WebDAV server. You can use RClone WebDAV server as proxy to 70+ public file hosting services (Eg. Google Drive, OneDrive, Mega, dropbox, NextCloud etc..)
+ - [Dufs](https://github.com/sigoden/dufs) - For hosting your own WebDAV server.
+ - [SFTPgo](https://github.com/drakkan/sftpgo) - For local hosted WebDAV server. Can also be used as a webdav frontend for Cloud Storage like AWS S3, Azure Blob or Google Storage.
+
+## Features Native Application##
+ - Transfer files back and forth between Switch and FTP/SMB/WebDAV server
+ - File management function include cut/copy/paste/rename/delete/new folder/file for files on Switch SD Card
 
 ## Controls
 ```
@@ -19,7 +55,7 @@ L1 - Navigate to the Local list of files
 ```
 
 ## Multi Language Support
-The appplication support following languages
+The appplication support following languages.
 
 The following languages are auto detected.
 ```
@@ -38,7 +74,7 @@ Simplified Chinese
 Traditional Chinese
 ```
 
-The following aren't standard languages supported by the Switch, therefore requires a config file update.
+The following aren't standard languages supported by the PS4, therefore requires a config file update.
 ```
 Arabic
 Catalan
@@ -48,28 +84,20 @@ Galego
 Greek
 Hungarian
 Indonesian
+Romanian
 Ryukyuan
 Thai
 Turkish
 ```
-User must modify the file **/switch/switch-smb-client/config.ini** located in the switch hard drive and update the **language** setting to with the **exact** values from the list above.
+User must modify the file **ux0:/data/RMTCLI001/config.ini** and update the **language** setting with the **exact** values from the list above.
 
-**HELP:** There are no language translations for the following languages, therefore not support yet. Please help expand the list by submitting translation for the following languages. If you would like to help, please download this [Template](https://github.com/cy33hc/switch-smb-client/blob/master/lang/English.ini), make your changes and submit an issue with the file attached.
+**HELP:** There are no language translations for the following languages, therefore not support yet. Please help expand the list by submitting translation for the following languages. If you would like to help, please download this [Template](https://github.com/cy33hc/switch-ezremote-client/blob/master/lang/English.ini), make your changes and submit an issue with the file attached.
 ```
 Finnish
 Swedish
 Danish
 Norwegian
 Czech
-Romanian
 Vietnamese
 ```
 or any other language that you have a traslation for.
-
-## Building
-Before build the app, you need to build the dependencies first.
-Clone the following Git repos and build them in order
-
-openssl - https://github.com/cy33hc/ps4-openssl/tree/OpenSSL_1_1_1-switch
-
-libsmb2 - https://github.com/cy33hc/libsmb2/tree/switch
