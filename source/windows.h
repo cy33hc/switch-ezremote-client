@@ -20,6 +20,9 @@ extern std::vector<DirEntry> local_files;
 extern std::vector<DirEntry> remote_files;
 extern std::set<DirEntry> multi_selected_local_files;
 extern std::set<DirEntry> multi_selected_remote_files;
+extern std::vector<DirEntry> local_paste_files;
+extern std::vector<DirEntry> remote_paste_files;
+extern ACTIONS paste_action;
 extern DirEntry selected_local_file;
 extern DirEntry selected_remote_file;
 extern ACTIONS selected_action;
@@ -36,6 +39,9 @@ extern int confirm_state;
 extern int overwrite_type;
 extern ACTIONS action_to_take;
 extern bool file_transfering;
+extern char extract_zip_folder[];
+extern char zip_file_path[];
+extern std::vector<std::string> edit_buffer;
 
 static ImVector<ImRect> s_GroupPanelLabelStack;
 
@@ -197,6 +203,7 @@ namespace Windows
     void AfterRemoteFileChangesCallback(int ime_result);
     void AfterFolderNameCallback(int ime_result);
     void CancelActionCallBack(int ime_result);
+    void AfterEditorCallback(int ime_result);
 }
 
 #endif

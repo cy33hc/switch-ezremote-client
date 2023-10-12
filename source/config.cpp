@@ -18,8 +18,10 @@ char app_ver[6];
 char last_site[32];
 char display_site[32];
 char language[128];
+int max_edit_file_size;
 std::vector<std::string> sites;
 std::map<std::string, RemoteSettings> site_settings;
+std::set<std::string> text_file_extensions;
 RemoteSettings *remote_settings;
 RemoteClient *remoteclient;
 
@@ -34,6 +36,7 @@ namespace CONFIG
         }
 
         sites = {"Site 1", "Site 2", "Site 3", "Site 4", "Site 5", "Site 6", "Site 7", "Site 8", "Site 9"};
+        text_file_extensions = { ".txt", ".ini", ".log", ".json", ".xml", ".html", ".xhtml", ".conf", ".config" };
 
         OpenIniFile(CONFIG_INI_FILE);
 
@@ -49,6 +52,9 @@ namespace CONFIG
 
         sprintf(remote_directory, "%s", ReadString(CONFIG_GLOBAL, CONFIG_REMOTE_DIRECTORY, "/"));
         WriteString(CONFIG_GLOBAL, CONFIG_REMOTE_DIRECTORY, remote_directory);
+
+        max_edit_file_size = ReadInt(CONFIG_GLOBAL, CONFIG_MAX_EDIT_FILE_SIZE, MAX_EDIT_FILE_SIZE);
+        WriteInt(CONFIG_GLOBAL, CONFIG_MAX_EDIT_FILE_SIZE, max_edit_file_size);
 
         for (int i = 0; i < sites.size(); i++)
         {

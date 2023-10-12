@@ -34,7 +34,21 @@ enum ACTIONS
     ACTION_REMOTE_CLEAR_ALL,
     ACTION_CONNECT,
     ACTION_DISCONNECT,
-    ACTION_DISCONNECT_AND_EXIT
+    ACTION_DISCONNECT_AND_EXIT,
+    ACTION_EXTRACT_LOCAL_ZIP,
+    ACTION_CREATE_LOCAL_ZIP,
+    ACTION_LOCAL_CUT,
+    ACTION_LOCAL_COPY,
+    ACTION_LOCAL_PASTE,
+    ACTION_LOCAL_EDIT,
+    ACTION_REMOTE_CUT,
+    ACTION_REMOTE_COPY,
+    ACTION_REMOTE_PASTE,
+    ACTION_REMOTE_EDIT,
+    ACTION_NEW_LOCAL_FILE,
+    ACTION_NEW_REMOTE_FILE,
+    ACTION_VIEW_LOCAL_IMAGE,
+    ACTION_VIEW_REMOTE_IMAGE
 };
 
 enum OverWriteType
@@ -73,6 +87,16 @@ namespace Actions
     void Disconnect();
     void SelectAllLocalFiles();
     void SelectAllRemoteFiles();
+    void MoveLocalFilesThread(void *argp);
+    void MoveLocalFiles();
+    void CopyLocalFilesThread(void *argp);
+    void CopyLocalFiles();
+    void MoveRemoteFilesThread(void *argp);
+    void MoveRemoteFiles();
+    void CopyRemoteFilesThread(void *argp);
+    void CopyRemoteFiles();
+    void CreateLocalFile(char *filename);
+    void CreateRemoteFile(char *filename);
 }
 
 #endif

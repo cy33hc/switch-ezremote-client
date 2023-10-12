@@ -73,9 +73,11 @@ namespace FS
         return (stat(path.c_str(), &dir_stat) == 0);
     }
 
-    void Rename(const std::string &from, const std::string &to)
+    bool Rename(const std::string &from, const std::string &to)
     {
         int res = rename(from.c_str(), to.c_str());
+
+        return res == 0;
     }
 
     FILE *Create(const std::string &path)
@@ -117,7 +119,7 @@ namespace FS
 
     int Write(FILE *f, const void *buffer, uint32_t size)
     {
-        int write = fwrite(buffer, size, 1, f);
+        int write = fwrite(buffer, 1, size, f);
         return write;
     }
 
@@ -145,6 +147,68 @@ namespace FS
         data.resize(read);
 
         return data;
+    }
+
+    bool LoadText(std::vector<std::string> *lines, const std::string &path)
+    {
+        FILE *fd = fopen(path.c_str(), "rb");
+        if (fd == nullptr)
+            return false;
+
+        lines->clear();
+
+        char buffer[1024];
+        short bytes_read;
+        std::vector<char> line = std::vector<char>(0);
+        do
+        {
+            bytes_read = fread(buffer, sizeof(char), 1024, fd);
+            if (bytes_read < 0)
+            {
+                fclose(fd);
+                return false;
+            }
+
+            for (short i = 0; i < bytes_read; i++)
+            {
+                if (buffer[i] != '\r' && buffer[i] != '\n')
+                {
+                    line.push_back(buffer[i]);
+                }
+                else
+                {
+                    lines->push_back(std::string(line.data(), line.size()));
+                    line = std::vector<char>(0);
+                    if (buffer[i] == '\r' && buffer[i+1] == '\n')
+                        i++;
+                }
+            }
+        } while (bytes_read == 1024);
+        if (line.size()>0)
+            lines->push_back(std::string(line.data(), line.size()));
+ 
+        fclose(fd);
+        if (lines->size() == 0)
+            lines->push_back("");
+        return true;
+    }
+
+    bool SaveText(std::vector<std::string> *lines, const std::string &path)
+    {
+        FILE *fd = OpenRW(path);
+        if (fd == nullptr)
+            return false;
+
+        char nl[1] = {'\n'};
+        for (int i=0; i < lines->size(); i++)
+        {
+            Write(fd, lines->at(i).c_str(), lines->at(i).length());
+            Write(fd, nl, 1);
+        }
+
+        fclose(fd);
+
+        return true;
     }
 
     void Save(const std::string &path, const void *data, uint32_t size)
@@ -367,5 +431,62 @@ namespace FS
         std::string path2 = ppath2;
         path2 = Util::Rtrim(Util::Trim(path2, " "), "/");
         return path1 + "/" + path2;
+    }
+
+    bool Copy(const std::string &from, const std::string &to)
+    {
+        MkDirs(to, true);
+        FILE *src = OpenRead(from);
+        if (!src)
+        {
+            return false;
+        }
+
+        bytes_to_download = GetSize(from);
+
+        FILE *dest = Create(to);
+        if (!dest)
+        {
+            Close(src);
+            return false;
+        }
+
+        size_t bytes_read = 0;
+        bytes_transfered = 0;
+        const size_t buf_size = 0x10000;
+        unsigned char *buf = new unsigned char[buf_size];
+
+        do
+        {
+            bytes_read = Read(src, buf, buf_size);
+            if (bytes_read < 0)
+            {
+                delete[] buf;
+                Close(src);
+                Close(dest);
+                return false;
+            }
+
+            size_t bytes_written = Write(dest, buf, bytes_read);
+            if (bytes_written != bytes_read)
+            {
+                delete[] buf;
+                Close(src);
+                Close(dest);
+                return false;
+            }
+
+            bytes_transfered += bytes_read;
+        } while (bytes_transfered < bytes_to_download);
+
+        delete[] buf;
+        Close(src);
+        Close(dest);
+        return true;
+    }
+
+    bool Move(const std::string &from, const std::string &to)
+    {
+        return Rename(from, to);
     }
 }

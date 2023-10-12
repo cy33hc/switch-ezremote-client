@@ -744,460 +744,471 @@ namespace Actions
         }
     }
 
-    /*
-        int CopyOrMoveLocalFile(const char *src, const char *dest, bool isCopy)
+    int CopyOrMoveLocalFile(const char *src, const char *dest, bool isCopy)
+    {
+        int ret;
+        if (overwrite_type == OVERWRITE_PROMPT && FS::FileExists(dest))
         {
-            int ret;
-            if (overwrite_type == OVERWRITE_PROMPT && FS::FileExists(dest))
+            sprintf(confirm_message, "%s %s?", lang_strings[STR_OVERWRITE], dest);
+            confirm_state = CONFIRM_WAIT;
+            action_to_take = selected_action;
+            activity_inprogess = false;
+            while (confirm_state == CONFIRM_WAIT)
             {
-                sprintf(confirm_message, "%s %s?", lang_strings[STR_OVERWRITE], dest);
-                confirm_state = CONFIRM_WAIT;
-                action_to_take = selected_action;
-                activity_inprogess = false;
-                while (confirm_state == CONFIRM_WAIT)
-                {
-                    sceKernelDelayThread(100000);
-                }
-                activity_inprogess = true;
-                selected_action = action_to_take;
+                svcSleepThread(100000000ull);
             }
-            else if (overwrite_type == OVERWRITE_NONE && FS::FileExists(dest))
-            {
-                confirm_state = CONFIRM_NO;
-            }
-            else
-            {
-                confirm_state = CONFIRM_YES;
-            }
-
-            if (confirm_state == CONFIRM_YES)
-            {
-                if (isCopy)
-                    return FS::Copy(src, dest);
-                else
-                    return FS::Move(src, dest);
-            }
-
-            return 1;
+            activity_inprogess = true;
+            selected_action = action_to_take;
+        }
+        else if (overwrite_type == OVERWRITE_NONE && FS::FileExists(dest))
+        {
+            confirm_state = CONFIRM_NO;
+        }
+        else
+        {
+            confirm_state = CONFIRM_YES;
         }
 
-        int CopyOrMove(const DirEntry &src, const char *dest, bool isCopy)
+        if (confirm_state == CONFIRM_YES)
         {
-            if (stop_activity)
-                return 1;
-
-            int ret;
-            if (src.isDir)
-            {
-                int err;
-                std::vector<DirEntry> entries = FS::ListDir(src.path, &err);
-                FS::MkDirs(dest);
-                for (int i = 0; i < entries.size(); i++)
-                {
-                    if (stop_activity)
-                        return 1;
-
-                    int path_length = strlen(dest) + strlen(entries[i].name) + 2;
-                    char *new_path = (char *)malloc(path_length);
-                    snprintf(new_path, path_length, "%s%s%s", dest, FS::hasEndSlash(dest) ? "" : "/", entries[i].name);
-
-                    if (entries[i].isDir)
-                    {
-                        if (strcmp(entries[i].name, "..") == 0)
-                            continue;
-
-                        FS::MkDirs(new_path);
-                        ret = CopyOrMove(entries[i], new_path, isCopy);
-                        if (ret <= 0)
-                        {
-                            free(new_path);
-                            return ret;
-                        }
-                    }
-                    else
-                    {
-                        snprintf(activity_message, 1024, "%s %s", isCopy ? lang_strings[STR_COPYING] : lang_strings[STR_MOVING], entries[i].path);
-                        bytes_to_download = entries[i].file_size;
-                        bytes_transfered = 0;
-                        ret = CopyOrMoveLocalFile(entries[i].path, new_path, isCopy);
-                        if (ret <= 0)
-                        {
-                            snprintf(status_message, 1023, "%s %s", isCopy ? lang_strings[STR_FAIL_COPY_MSG] : lang_strings[STR_FAIL_MOVE_MSG], entries[i].path);
-                            free(new_path);
-                            return ret;
-                        }
-                    }
-                    free(new_path);
-                }
-            }
+            if (isCopy)
+                return FS::Copy(src, dest);
             else
+                return FS::Move(src, dest);
+        }
+
+        return 1;
+    }
+
+    int CopyOrMove(const DirEntry &src, const char *dest, bool isCopy)
+    {
+        if (stop_activity)
+            return 1;
+
+        int ret;
+        if (src.isDir)
+        {
+            int err;
+            std::vector<DirEntry> entries = FS::ListDir(src.path, &err);
+            FS::MkDirs(dest);
+            for (int i = 0; i < entries.size(); i++)
             {
-                int path_length = strlen(dest) + strlen(src.name) + 2;
+                if (stop_activity)
+                    return 1;
+
+                int path_length = strlen(dest) + strlen(entries[i].name) + 2;
                 char *new_path = (char *)malloc(path_length);
-                snprintf(new_path, path_length, "%s%s%s", dest, FS::hasEndSlash(dest) ? "" : "/", src.name);
-                snprintf(activity_message, 1024, "%s %s", isCopy ? lang_strings[STR_COPYING] : lang_strings[STR_MOVING], src.name);
-                bytes_to_download = src.file_size;
-                ret = CopyOrMoveLocalFile(src.path, new_path, isCopy);
-                if (ret <= 0)
+                snprintf(new_path, path_length, "%s%s%s", dest, FS::hasEndSlash(dest) ? "" : "/", entries[i].name);
+
+                if (entries[i].isDir)
                 {
-                    free(new_path);
-                    snprintf(status_message, 1023, "%s %s", isCopy ? lang_strings[STR_FAIL_COPY_MSG] : lang_strings[STR_FAIL_MOVE_MSG], src.name);
-                    return 0;
+                    if (strcmp(entries[i].name, "..") == 0)
+                        continue;
+
+                    FS::MkDirs(new_path);
+                    ret = CopyOrMove(entries[i], new_path, isCopy);
+                    if (ret <= 0)
+                    {
+                        free(new_path);
+                        return ret;
+                    }
+                }
+                else
+                {
+                    snprintf(activity_message, 1024, "%s %s", isCopy ? lang_strings[STR_COPYING] : lang_strings[STR_MOVING], entries[i].path);
+                    bytes_to_download = entries[i].file_size;
+                    bytes_transfered = 0;
+                    ret = CopyOrMoveLocalFile(entries[i].path, new_path, isCopy);
+                    if (ret <= 0)
+                    {
+                        snprintf(status_message, 1023, "%s %s", isCopy ? lang_strings[STR_FAIL_COPY_MSG] : lang_strings[STR_FAIL_MOVE_MSG], entries[i].path);
+                        free(new_path);
+                        return ret;
+                    }
                 }
                 free(new_path);
             }
-            return 1;
         }
-
-        void MoveLocalFilesThread(SceSize args, void *argp)
+        else
         {
-            file_transfering = true;
-            for (std::vector<DirEntry>::iterator it = local_paste_files.begin(); it != local_paste_files.end(); ++it)
+            int path_length = strlen(dest) + strlen(src.name) + 2;
+            char *new_path = (char *)malloc(path_length);
+            snprintf(new_path, path_length, "%s%s%s", dest, FS::hasEndSlash(dest) ? "" : "/", src.name);
+            snprintf(activity_message, 1024, "%s %s", isCopy ? lang_strings[STR_COPYING] : lang_strings[STR_MOVING], src.name);
+            bytes_to_download = src.file_size;
+            ret = CopyOrMoveLocalFile(src.path, new_path, isCopy);
+            if (ret <= 0)
             {
-                if (stop_activity)
-                    break;
-
-                if (strcmp(it->directory, local_directory) == 0)
-                    continue;
-
-                if (it->isDir)
-                {
-                    if (strncmp(local_directory, it->path, strlen(it->path)) == 0)
-                    {
-                        snprintf(status_message, 1023, "%s", lang_strings[STR_CANT_MOVE_TO_SUBDIR_MSG]);
-                        continue;
-                    }
-                    char new_dir[512];
-                    sprintf(new_dir, "%s%s%s", local_directory, FS::hasEndSlash(local_directory) ? "" : "/", it->name);
-                    CopyOrMove(*it, new_dir, false);
-                    FS::RmRecursive(it->path);
-                }
-                else
-                {
-                    CopyOrMove(*it, local_directory, false);
-                    FS::Rm(it->path);
-                }
+                free(new_path);
+                snprintf(status_message, 1023, "%s %s", isCopy ? lang_strings[STR_FAIL_COPY_MSG] : lang_strings[STR_FAIL_MOVE_MSG], src.name);
+                return 0;
             }
-            activity_inprogess = false;
+            free(new_path);
+        }
+        return 1;
+    }
+
+    void MoveLocalFilesThread(void *argp)
+    {
+        file_transfering = true;
+        for (std::vector<DirEntry>::iterator it = local_paste_files.begin(); it != local_paste_files.end(); ++it)
+        {
+            if (stop_activity)
+                break;
+
+            if (strcmp(it->directory, local_directory) == 0)
+                continue;
+
+            if (it->isDir)
+            {
+                if (strncmp(local_directory, it->path, strlen(it->path)) == 0)
+                {
+                    snprintf(status_message, 1023, "%s", lang_strings[STR_CANT_MOVE_TO_SUBDIR_MSG]);
+                    continue;
+                }
+                char new_dir[512];
+                sprintf(new_dir, "%s%s%s", local_directory, FS::hasEndSlash(local_directory) ? "" : "/", it->name);
+                CopyOrMove(*it, new_dir, false);
+                FS::RmRecursive(it->path);
+            }
+            else
+            {
+                CopyOrMove(*it, local_directory, false);
+                FS::Rm(it->path);
+            }
+        }
+        activity_inprogess = false;
+        file_transfering = false;
+        local_paste_files.clear();
+        Windows::SetModalMode(false);
+        selected_action = ACTION_REFRESH_LOCAL_FILES;
+        threadExit();
+    }
+
+    void MoveLocalFiles()
+    {
+        snprintf(status_message, 1023, "%s", "");
+        int res = threadCreate(&bk_activity_thid, MoveLocalFilesThread, NULL, NULL, 0x10000, 0x3B, -2);
+        if (R_FAILED(res))
+        {
             file_transfering = false;
+            activity_inprogess = false;
             local_paste_files.clear();
             Windows::SetModalMode(false);
-            selected_action = ACTION_REFRESH_LOCAL_FILES;
-            return sceKernelExitDeleteThread(0);;
+            threadClose(&bk_activity_thid);
         }
-
-        void MoveLocalFiles()
+        else
         {
-            snprintf(status_message, 1023, "%s", "");
-            bk_activity_thid = sceKernelCreateThread("move_local_files", (SceKernelThreadEntry)MoveLocalFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
-            if (bk_activity_thid >= 0)
-                sceKernelStartThread(bk_activity_thid, 0, NULL);
+            threadStart(&bk_activity_thid);
+        }
+    }
+
+    void CopyLocalFilesThread(void *argp)
+    {
+        file_transfering = true;
+        for (std::vector<DirEntry>::iterator it = local_paste_files.begin(); it != local_paste_files.end(); ++it)
+        {
+            if (stop_activity)
+                break;
+
+            if (strcmp(it->directory, local_directory) == 0)
+                continue;
+
+            if (it->isDir)
+            {
+                if (strncmp(local_directory, it->path, strlen(it->path)) == 0)
+                {
+                    snprintf(status_message, 1023, "%s", lang_strings[STR_CANT_COPY_TO_SUBDIR_MSG]);
+                    continue;
+                }
+                char new_dir[512];
+                sprintf(new_dir, "%s%s%s", local_directory, FS::hasEndSlash(local_directory) ? "" : "/", it->name);
+                CopyOrMove(*it, new_dir, true);
+            }
             else
             {
-                file_transfering = false;
-                activity_inprogess = false;
-                local_paste_files.clear();
-                Windows::SetModalMode(false);
+                CopyOrMove(*it, local_directory, true);
             }
         }
+        activity_inprogess = false;
+        file_transfering = false;
+        local_paste_files.clear();
+        Windows::SetModalMode(false);
+        selected_action = ACTION_REFRESH_LOCAL_FILES;
+        threadExit();
+    }
 
-        void CopyLocalFilesThread(SceSize args, void *argp)
+    void CopyLocalFiles()
+    {
+        snprintf(status_message, 1023, "%s", "");
+        int res = threadCreate(&bk_activity_thid, CopyLocalFilesThread, NULL, NULL, 0x10000, 0x3B, -2);
+        if (R_FAILED(res))
         {
-            file_transfering = true;
-            for (std::vector<DirEntry>::iterator it = local_paste_files.begin(); it != local_paste_files.end(); ++it)
-            {
-                if (stop_activity)
-                    break;
-
-                if (strcmp(it->directory, local_directory) == 0)
-                    continue;
-
-                if (it->isDir)
-                {
-                    if (strncmp(local_directory, it->path, strlen(it->path)) == 0)
-                    {
-                        snprintf(status_message, 1023, "%s", lang_strings[STR_CANT_COPY_TO_SUBDIR_MSG]);
-                        continue;
-                    }
-                    char new_dir[512];
-                    sprintf(new_dir, "%s%s%s", local_directory, FS::hasEndSlash(local_directory) ? "" : "/", it->name);
-                    CopyOrMove(*it, new_dir, true);
-                }
-                else
-                {
-                    CopyOrMove(*it, local_directory, true);
-                }
-            }
-            activity_inprogess = false;
             file_transfering = false;
+            activity_inprogess = false;
             local_paste_files.clear();
             Windows::SetModalMode(false);
-            selected_action = ACTION_REFRESH_LOCAL_FILES;
-            return sceKernelExitDeleteThread(0);;
+            threadClose(&bk_activity_thid);
         }
-
-        void CopyLocalFiles()
+        else
         {
-            snprintf(status_message, 1023, "%s", "");
-            bk_activity_thid = sceKernelCreateThread("copy_local_files", (SceKernelThreadEntry)CopyLocalFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
-            if (bk_activity_thid >= 0)
-                sceKernelStartThread(bk_activity_thid, 0, NULL);
-            else
+            threadStart(&bk_activity_thid);
+        }
+    }
+
+    int CopyOrMoveRemoteFile(const std::string &src, const std::string &dest, bool isCopy)
+    {
+        int ret;
+        if (overwrite_type == OVERWRITE_PROMPT && remoteclient->FileExists(dest))
+        {
+            sprintf(confirm_message, "%s %s?", lang_strings[STR_OVERWRITE], dest.c_str());
+            confirm_state = CONFIRM_WAIT;
+            action_to_take = selected_action;
+            activity_inprogess = false;
+            while (confirm_state == CONFIRM_WAIT)
             {
-                file_transfering = false;
-                activity_inprogess = false;
-                local_paste_files.clear();
-                Windows::SetModalMode(false);
+                svcSleepThread(100000000ull);
             }
+            activity_inprogess = true;
+            selected_action = action_to_take;
+        }
+        else if (overwrite_type == OVERWRITE_NONE && remoteclient->FileExists(dest))
+        {
+            confirm_state = CONFIRM_NO;
+        }
+        else
+        {
+            confirm_state = CONFIRM_YES;
         }
 
-        int CopyOrMoveRemoteFile(const std::string &src, const std::string &dest, bool isCopy)
+        if (confirm_state == CONFIRM_YES)
         {
-            int ret;
-            if (overwrite_type == OVERWRITE_PROMPT && remoteclient->FileExists(dest))
+            if (isCopy)
+                return remoteclient->Copy(src, dest);
+            else
+                return remoteclient->Move(src, dest);
+        }
+
+        return 1;
+    }
+
+    void MoveRemoteFilesThread(void *argp)
+    {
+        file_transfering = false;
+        for (std::vector<DirEntry>::iterator it = remote_paste_files.begin(); it != remote_paste_files.end(); ++it)
+        {
+            if (stop_activity)
+                break;
+
+            if (strcmp(it->directory, remote_directory) == 0)
+                continue;
+
+            char new_path[1024];
+            sprintf(new_path, "%s%s%s", remote_directory, FS::hasEndSlash(remote_directory) ? "" : "/", it->name);
+            if (it->isDir)
             {
-                sprintf(confirm_message, "%s %s?", lang_strings[STR_OVERWRITE], dest.c_str());
-                confirm_state = CONFIRM_WAIT;
-                action_to_take = selected_action;
-                activity_inprogess = false;
-                while (confirm_state == CONFIRM_WAIT)
+                if (strncmp(remote_directory, it->path, strlen(it->path)) == 0)
                 {
-                    sceKernelDelayThread(100000);
+                    snprintf(status_message, 1023, "%s", lang_strings[STR_CANT_MOVE_TO_SUBDIR_MSG]);
+                    continue;
                 }
-                activity_inprogess = true;
-                selected_action = action_to_take;
-            }
-            else if (overwrite_type == OVERWRITE_NONE && remoteclient->FileExists(dest))
-            {
-                confirm_state = CONFIRM_NO;
-            }
-            else
-            {
-                confirm_state = CONFIRM_YES;
             }
 
-            if (confirm_state == CONFIRM_YES)
-            {
-                if (isCopy)
-                    return remoteclient->Copy(src, dest);
-                else
-                    return remoteclient->Move(src, dest);
-            }
-
-            return 1;
+            snprintf(activity_message, 1024, "%s %s", lang_strings[STR_MOVING], it->path);
+            int res = CopyOrMoveRemoteFile(it->path, new_path, false);
+            if (res == 0)
+                snprintf(status_message, 1023, "%s - %s", it->name, lang_strings[STR_FAIL_COPY_MSG]);
         }
+        activity_inprogess = false;
+        file_transfering = false;
+        remote_paste_files.clear();
+        Windows::SetModalMode(false);
+        selected_action = ACTION_REFRESH_REMOTE_FILES;
+        threadExit();
+    }
 
-        void MoveRemoteFilesThread(SceSize args, void *argp)
+    void MoveRemoteFiles()
+    {
+        snprintf(status_message, 1023, "%s", "");
+        int res = threadCreate(&bk_activity_thid, MoveRemoteFilesThread, NULL, NULL, 0x10000, 0x3B, -2);
+        if (R_FAILED(res))
         {
             file_transfering = false;
-            for (std::vector<DirEntry>::iterator it = remote_paste_files.begin(); it != remote_paste_files.end(); ++it)
+            activity_inprogess = false;
+            local_paste_files.clear();
+            Windows::SetModalMode(false);
+            threadClose(&bk_activity_thid);
+        }
+        else
+        {
+            threadStart(&bk_activity_thid);
+        }
+    }
+
+    int CopyRemotePath(const DirEntry &src, const char *dest)
+    {
+        if (stop_activity)
+            return 1;
+
+        int ret;
+        if (src.isDir)
+        {
+            int err;
+            std::vector<DirEntry> entries = remoteclient->ListDir(src.path);
+            remoteclient->Mkdir(dest);
+            for (int i = 0; i < entries.size(); i++)
             {
                 if (stop_activity)
-                    break;
+                    return 1;
 
-                if (strcmp(it->directory, remote_directory) == 0)
-                    continue;
+                int path_length = strlen(dest) + strlen(entries[i].name) + 2;
+                char *new_path = (char *)malloc(path_length);
+                snprintf(new_path, path_length, "%s%s%s", dest, FS::hasEndSlash(dest) ? "" : "/", entries[i].name);
 
-                char new_path[1024];
-                sprintf(new_path, "%s%s%s", remote_directory, FS::hasEndSlash(remote_directory) ? "" : "/", it->name);
-                if (it->isDir)
+                if (entries[i].isDir)
                 {
-                    if (strncmp(remote_directory, it->path, strlen(it->path)) == 0)
-                    {
-                        snprintf(status_message, 1023, "%s", lang_strings[STR_CANT_MOVE_TO_SUBDIR_MSG]);
+                    if (strcmp(entries[i].name, "..") == 0)
                         continue;
+
+                    remoteclient->Mkdir(new_path);
+                    ret = CopyRemotePath(entries[i], new_path);
+                    if (ret <= 0)
+                    {
+                        free(new_path);
+                        return ret;
                     }
                 }
+                else
+                {
+                    snprintf(activity_message, 1024, "%s %s", lang_strings[STR_COPYING], entries[i].path);
+                    bytes_to_download = entries[i].file_size;
+                    bytes_transfered = 0;
+                    ret = CopyOrMoveRemoteFile(entries[i].path, new_path, true);
+                    if (ret <= 0)
+                    {
+                        snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_COPY_MSG], entries[i].path);
+                        free(new_path);
+                        return ret;
+                    }
+                }
+                free(new_path);
+            }
+        }
+        else
+        {
+            int path_length = strlen(dest) + strlen(src.name) + 2;
+            char *new_path = (char *)malloc(path_length);
+            snprintf(new_path, path_length, "%s%s%s", dest, FS::hasEndSlash(dest) ? "" : "/", src.name);
+            snprintf(activity_message, 1024, "%s %s", lang_strings[STR_COPYING], src.name);
+            ret = CopyOrMoveRemoteFile(src.path, new_path, true);
+            if (ret <= 0)
+            {
+                free(new_path);
+                snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_COPY_MSG], src.name);
+                return 0;
+            }
+            free(new_path);
+        }
+        return 1;
+    }
 
-                snprintf(activity_message, 1024, "%s %s", lang_strings[STR_MOVING], it->path);
-                int res = CopyOrMoveRemoteFile(it->path, new_path, false);
+    void CopyRemoteFilesThread(void *argp)
+    {
+        file_transfering = false;
+        for (std::vector<DirEntry>::iterator it = remote_paste_files.begin(); it != remote_paste_files.end(); ++it)
+        {
+            if (stop_activity)
+                break;
+
+            if (strcmp(it->directory, remote_directory) == 0)
+                continue;
+
+            char new_path[1024];
+            sprintf(new_path, "%s%s%s", remote_directory, FS::hasEndSlash(remote_directory) ? "" : "/", it->name);
+            if (it->isDir)
+            {
+                if (strncmp(remote_directory, it->path, strlen(it->path)) == 0)
+                {
+                    snprintf(status_message, 1023, "%s", lang_strings[STR_CANT_COPY_TO_SUBDIR_MSG]);
+                    continue;
+                }
+                int res = CopyRemotePath(*it, new_path);
                 if (res == 0)
                     snprintf(status_message, 1023, "%s - %s", it->name, lang_strings[STR_FAIL_COPY_MSG]);
             }
+            else
+            {
+                int res = CopyRemotePath(*it, remote_directory);
+                if (res == 0)
+                    snprintf(status_message, 1023, "%s - %s", it->name, lang_strings[STR_FAIL_COPY_MSG]);
+            }
+        }
+        activity_inprogess = false;
+        file_transfering = false;
+        remote_paste_files.clear();
+        Windows::SetModalMode(false);
+        selected_action = ACTION_REFRESH_REMOTE_FILES;
+        threadExit();
+    }
+
+    void CopyRemoteFiles()
+    {
+        snprintf(status_message, 1023, "%s", "");
+        int res = threadCreate(&bk_activity_thid, CopyRemoteFilesThread, NULL, NULL, 0x10000, 0x3B, -2);
+        if (R_FAILED(res))
+        {
+            file_transfering = false;
             activity_inprogess = false;
-            file_transfering = false;
-            remote_paste_files.clear();
+            local_paste_files.clear();
             Windows::SetModalMode(false);
-            selected_action = ACTION_REFRESH_REMOTE_FILES;
-            return sceKernelExitDeleteThread(0);;
+            threadClose(&bk_activity_thid);
         }
-
-        void MoveRemoteFiles()
+        else
         {
-            snprintf(status_message, 1023, "%s", "");
-            bk_activity_thid = sceKernelCreateThread("move_remote_files", (SceKernelThreadEntry)MoveRemoteFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
-            if (bk_activity_thid >= 0)
-                sceKernelStartThread(bk_activity_thid, 0, NULL);
-            else
-            {
-                file_transfering = false;
-                activity_inprogess = false;
-                local_paste_files.clear();
-                Windows::SetModalMode(false);
-            }
+            threadStart(&bk_activity_thid);
         }
+    }
 
-        int CopyRemotePath(const DirEntry &src, const char *dest)
+    void CreateLocalFile(char *filename)
+    {
+        std::string new_file = FS::GetPath(local_directory, filename);
+        std::string temp_file = new_file;
+        int i = 1;
+        while (true)
         {
-            if (stop_activity)
-                return 1;
-
-            int ret;
-            if (src.isDir)
-            {
-                int err;
-                std::vector<DirEntry> entries = remoteclient->ListDir(src.path);
-                remoteclient->Mkdir(dest);
-                for (int i = 0; i < entries.size(); i++)
-                {
-                    if (stop_activity)
-                        return 1;
-
-                    int path_length = strlen(dest) + strlen(entries[i].name) + 2;
-                    char *new_path = (char *)malloc(path_length);
-                    snprintf(new_path, path_length, "%s%s%s", dest, FS::hasEndSlash(dest) ? "" : "/", entries[i].name);
-
-                    if (entries[i].isDir)
-                    {
-                        if (strcmp(entries[i].name, "..") == 0)
-                            continue;
-
-                        remoteclient->Mkdir(new_path);
-                        ret = CopyRemotePath(entries[i], new_path);
-                        if (ret <= 0)
-                        {
-                            free(new_path);
-                            return ret;
-                        }
-                    }
-                    else
-                    {
-                        snprintf(activity_message, 1024, "%s %s", lang_strings[STR_COPYING], entries[i].path);
-                        bytes_to_download = entries[i].file_size;
-                        bytes_transfered = 0;
-                        ret = CopyOrMoveRemoteFile(entries[i].path, new_path, true);
-                        if (ret <= 0)
-                        {
-                            snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_COPY_MSG], entries[i].path);
-                            free(new_path);
-                            return ret;
-                        }
-                    }
-                    free(new_path);
-                }
-            }
-            else
-            {
-                int path_length = strlen(dest) + strlen(src.name) + 2;
-                char *new_path = (char *)malloc(path_length);
-                snprintf(new_path, path_length, "%s%s%s", dest, FS::hasEndSlash(dest) ? "" : "/", src.name);
-                snprintf(activity_message, 1024, "%s %s", lang_strings[STR_COPYING], src.name);
-                ret = CopyOrMoveRemoteFile(src.path, new_path, true);
-                if (ret <= 0)
-                {
-                    free(new_path);
-                    snprintf(status_message, 1023, "%s %s", lang_strings[STR_FAIL_COPY_MSG], src.name);
-                    return 0;
-                }
-                free(new_path);
-            }
-            return 1;
+            if (!FS::FileExists(temp_file))
+                break;
+            temp_file = new_file + "." + std::to_string(i);
+            i++;
         }
+        FILE *f = FS::Create(temp_file);
+        FS::Close(f);
+        RefreshLocalFiles(false);
+        sprintf(local_file_to_select, "%s", temp_file.c_str());
+    }
 
-        void CopyRemoteFilesThread(SceSize args, void *argp)
+    void CreateRemoteFile(char *filename)
+    {
+        std::string new_file = FS::GetPath(remote_directory, filename);
+        std::string temp_file = new_file;
+        int i = 1;
+        while (true)
         {
-            file_transfering = false;
-            for (std::vector<DirEntry>::iterator it = remote_paste_files.begin(); it != remote_paste_files.end(); ++it)
-            {
-                if (stop_activity)
-                    break;
-
-                if (strcmp(it->directory, remote_directory) == 0)
-                    continue;
-
-                char new_path[1024];
-                sprintf(new_path, "%s%s%s", remote_directory, FS::hasEndSlash(remote_directory) ? "" : "/", it->name);
-                if (it->isDir)
-                {
-                    if (strncmp(remote_directory, it->path, strlen(it->path)) == 0)
-                    {
-                        snprintf(status_message, 1023, "%s", lang_strings[STR_CANT_COPY_TO_SUBDIR_MSG]);
-                        continue;
-                    }
-                    int res = CopyRemotePath(*it, new_path);
-                    if (res == 0)
-                        snprintf(status_message, 1023, "%s - %s", it->name, lang_strings[STR_FAIL_COPY_MSG]);
-                }
-                else
-                {
-                    int res = CopyRemotePath(*it, remote_directory);
-                    if (res == 0)
-                        snprintf(status_message, 1023, "%s - %s", it->name, lang_strings[STR_FAIL_COPY_MSG]);
-                }
-            }
-            activity_inprogess = false;
-            file_transfering = false;
-            remote_paste_files.clear();
-            Windows::SetModalMode(false);
-            selected_action = ACTION_REFRESH_REMOTE_FILES;
-            return sceKernelExitDeleteThread(0);;
+            if (!remoteclient->FileExists(temp_file))
+                break;
+            temp_file = new_file + "." + std::to_string(i);
+            i++;
         }
 
-        void CopyRemoteFiles()
-        {
-            snprintf(status_message, 1023, "%s", "");
-            bk_activity_thid = sceKernelCreateThread("copy_remote_files", (SceKernelThreadEntry)CopyRemoteFilesThread, 0x10000100, 0x4000, 0, 0, NULL);
-            if (bk_activity_thid >= 0)
-                sceKernelStartThread(bk_activity_thid, 0, NULL);
-            else
-            {
-                file_transfering = false;
-                activity_inprogess = false;
-                local_paste_files.clear();
-                Windows::SetModalMode(false);
-            }
-        }
+        time_t seconds;
+        seconds = time(NULL);
+        std::string local_tmp = std::string(DATA_PATH) + "/" + std::to_string(seconds);
+        FILE *f = FS::Create(local_tmp);
+        FS::Close(f);
+        remoteclient->Put(local_tmp, temp_file);
+        FS::Rm(local_tmp);
+        RefreshRemoteFiles(false);
+        sprintf(remote_file_to_select, "%s", temp_file.c_str());
+    }
 
-        void CreateLocalFile(char *filename)
-        {
-            std::string new_file = FS::GetPath(local_directory, filename);
-            std::string temp_file = new_file;
-            int i = 1;
-            while (true)
-            {
-                if (!FS::FileExists(temp_file))
-                    break;
-                temp_file = new_file + "." + std::to_string(i);
-                i++;
-            }
-            FILE* f = FS::Create(temp_file);
-            FS::Close(f);
-            RefreshLocalFiles(false);
-            sprintf(local_file_to_select, "%s", temp_file.c_str());
-        }
-
-        void CreateRemoteFile(char *filename)
-        {
-            std::string new_file = FS::GetPath(remote_directory, filename);
-            std::string temp_file = new_file;
-            int i = 1;
-            while (true)
-            {
-                if (!remoteclient->FileExists(temp_file))
-                    break;
-                temp_file = new_file + "." + std::to_string(i);
-                i++;
-            }
-
-            SceRtcTick tick;
-            sceRtcGetCurrentTick(&tick);
-            std::string local_tmp = std::string(DATA_PATH) + "/" + std::to_string(tick.tick);
-            FILE *f = FS::Create(local_tmp);
-            FS::Close(f);
-            remoteclient->Put(local_tmp, temp_file);
-            FS::Rm(local_tmp);
-            RefreshRemoteFiles(false);
-            sprintf(remote_file_to_select, "%s", temp_file.c_str());
-        }
-    */
 }

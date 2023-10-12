@@ -24,7 +24,7 @@ namespace FS
     bool FileExists(const std::string &path);
     bool FolderExists(const std::string &path);
 
-    void Rename(const std::string &from, const std::string &to);
+    bool Rename(const std::string &from, const std::string &to);
 
     // creates file (if it exists, truncates size to 0)
     FILE *Create(const std::string &path);
@@ -53,6 +53,13 @@ namespace FS
     void Sort(std::vector<DirEntry> &list);
 
     int hasEndSlash(const char *path);
+
+    bool Copy(const std::string &from, const std::string &to);
+    bool Move(const std::string &from, const std::string &to);
+
+    bool LoadText(std::vector<std::string> *lines, const std::string &path);
+    bool SaveText(std::vector<std::string> *lines, const std::string &path);
+
 }
 
 #endif

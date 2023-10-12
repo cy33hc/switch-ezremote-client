@@ -296,6 +296,7 @@ static u64 ImGui_ImplSwitch_UpdateGamepads(void)
     MAP_BUTTON(ImGuiKey_GamepadBack, HidNpadButton_B);
     MAP_BUTTON(ImGuiKey_GamepadFaceDown, HidNpadButton_A);
     MAP_BUTTON(ImGuiKey_GamepadFaceRight, HidNpadButton_B);
+    MAP_BUTTON(ImGuiKey_A, HidNpadButton_Y);
     MAP_BUTTON(ImGuiKey_GamepadFaceUp, HidNpadButton_X);
     MAP_BUTTON(ImGuiKey_GamepadDpadLeft, HidNpadButton_Left);
     MAP_BUTTON(ImGuiKey_GamepadDpadRight, HidNpadButton_Right)
