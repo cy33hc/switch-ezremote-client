@@ -4,6 +4,10 @@ ezRemote Client is a File Manager application that allows you to connect the Swi
 
 ![Preview](/screenshot.jpg)
 
+## Installation
+ - Copy ezremote-client.nro to the "/switch" folder on sdcard
+ - Install [ezremote-client.nsp](https://github.com/cy33hc/switch-ezremote-client/releases/download/1.00/ezremote-client.nsp)
+   
 ## Usage
 To distinguish between FTP, SMB, WebDAV, the URL must be prefix with **ftp://**, **smb://**, **webdav://**, **webdavs://**
 
