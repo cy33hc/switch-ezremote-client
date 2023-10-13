@@ -87,6 +87,10 @@ namespace Actions
     void Disconnect();
     void SelectAllLocalFiles();
     void SelectAllRemoteFiles();
+    void ExtractZipThread(void *argp);
+    void ExtractLocalZips();
+    void MakeZipThread(void *argp);
+    void MakeLocalZip();
     void MoveLocalFilesThread(void *argp);
     void MoveLocalFiles();
     void CopyLocalFilesThread(void *argp);

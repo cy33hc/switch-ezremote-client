@@ -160,6 +160,65 @@ namespace Windows
         paused = modal;
     }
 
+    std::string getUniqueZipFilename()
+    {
+        std::string zipfolder;
+        std::string zipname;
+        std::vector<DirEntry> files;
+        if (multi_selected_local_files.size() > 0)
+            std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(files));
+        else
+            files.push_back(selected_local_file);
+
+        zipfolder = files.begin()->directory;
+
+        if (files.size() == 1)
+        {
+            zipname = files.begin()->name;
+        }
+        else if (strcmp(files.begin()->directory, "/") == 0)
+        {
+            zipname = "new_zip";
+        }
+        else
+        {
+            zipname = std::string(files.begin()->directory);
+            zipname = zipname.substr(zipname.find_last_of("/") + 1);
+        }
+
+        std::string zip_path;
+        if (zipfolder == "/")
+            zip_path = zipfolder + zipname;
+        else
+            zip_path = zipfolder + "/" + zipname;
+        int i = 0;
+        while (true)
+        {
+            std::string temp_path;
+            i > 0 ? temp_path = zip_path + "(" + std::to_string(i) + ").zip" : temp_path = zip_path + ".zip";
+            if (!FS::FileExists(temp_path))
+                return temp_path;
+            i++;
+        }
+    }
+
+    std::string getExtractFolder()
+    {
+        std::string zipfolder;
+        std::vector<DirEntry> files;
+
+        if (multi_selected_local_files.size() > 0)
+            std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(files));
+        else
+            files.push_back(selected_local_file);
+
+
+        std::string filename = std::string(files.begin()->name);
+        size_t dot_pos = filename.find_last_of(".");
+        zipfolder = std::string(local_directory) + "/" + filename.substr(0, dot_pos);
+        return zipfolder;
+    }
+
     void ConnectionPanel()
     {
         ImGuiStyle *style = &ImGui::GetStyle();
@@ -849,6 +908,45 @@ namespace Windows
             flags = ImGuiSelectableFlags_Disabled;
             if (local_browser_selected)
             {
+                ImGui::PushID("Extract##settings");
+                if (ImGui::Selectable(lang_strings[STR_EXTRACT], false, getSelectableFlag(REMOTE_ACTION_NONE) | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+                {
+                    ResetImeCallbacks();
+                    sprintf(extract_zip_folder, "%s", getExtractFolder().c_str());
+                    ime_single_field = extract_zip_folder;
+                    ime_field_size = 255;
+                    ime_callback = SingleValueImeCallback;
+                    ime_after_update = AfterExtractFolderCallback;
+                    Dialog::initImeDialog(lang_strings[STR_EXTRACT_LOCATION], extract_zip_folder, 255, SwkbdType_Normal, 0, 0);
+                    gui_mode = GUI_MODE_IME;
+                    file_transfering = true;
+                    SetModalMode(false);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+
+                ImGui::PushID("Compress##settings");
+                if (ImGui::Selectable(lang_strings[STR_COMPRESS], false, getSelectableFlag(REMOTE_ACTION_NONE) | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+                {
+                    std::string zipname;
+                    std::string zipfolder;
+
+                    ResetImeCallbacks();
+                    sprintf(zip_file_path, "%s", getUniqueZipFilename().c_str());
+                    ime_single_field = zip_file_path;
+                    ime_field_size = 383;
+                    ime_callback = SingleValueImeCallback;
+                    ime_after_update = AfterZipFileCallback;
+                    Dialog::initImeDialog(lang_strings[STR_ZIP_FILE_PATH], zip_file_path, 383, SwkbdType_Normal, 0, 0);
+                    gui_mode = GUI_MODE_IME;
+                    file_transfering = true;
+                    SetModalMode(false);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+
                 flags = getSelectableFlag(REMOTE_ACTION_UPLOAD);
                 if (local_browser_selected && remoteclient != nullptr && !(remoteclient->SupportedActions() & REMOTE_ACTION_UPLOAD))
                 {
@@ -1334,6 +1432,24 @@ namespace Windows
                 selected_action = ACTION_NONE;
             }
             break;
+        case ACTION_EXTRACT_LOCAL_ZIP:
+            sprintf(status_message, "%s", "");
+            activity_inprogess = true;
+            sprintf(activity_message, "%s", "");
+            stop_activity = false;
+            file_transfering = true;
+            selected_action = ACTION_NONE;
+            Actions::ExtractLocalZips();
+            break;
+        case ACTION_CREATE_LOCAL_ZIP:
+            sprintf(status_message, "%s", "");
+            activity_inprogess = true;
+            sprintf(activity_message, "%s", "");
+            stop_activity = false;
+            file_transfering = true;
+            selected_action = ACTION_NONE;
+            Actions::MakeLocalZip();
+            break;
         case ACTION_RENAME_LOCAL:
             if (gui_mode != GUI_MODE_IME)
             {
@@ -1582,6 +1698,17 @@ namespace Windows
     {
         selected_action = ACTION_NONE;
     }
+
+    void AfterExtractFolderCallback(int ime_result)
+    {
+        selected_action = ACTION_EXTRACT_LOCAL_ZIP;
+    }
+
+    void AfterZipFileCallback(int ime_result)
+    {
+        selected_action = ACTION_CREATE_LOCAL_ZIP;
+    }
+
 
     void AfterEditorCallback(int ime_result)
     {

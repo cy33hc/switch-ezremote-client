@@ -433,6 +433,21 @@ namespace FS
         return path1 + "/" + path2;
     }
 
+    int Head(const std::string &path, void *buffer, uint16_t len)
+    {
+        FILE *file = OpenRead(path);
+        if (file == nullptr)
+            return 0;
+        int ret = Read(file, buffer, len);
+        if (ret != len)
+        {
+            Close(file);
+            return 0;
+        }
+        Close(file);
+        return 1;
+    }
+
     bool Copy(const std::string &from, const std::string &to)
     {
         MkDirs(to, true);

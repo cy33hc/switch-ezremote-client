@@ -41,6 +41,7 @@ add_executable(${TARGET}
   source/windows.cpp
   source/config.cpp
   source/ime_dialog.cpp
+  source/zip_util.cpp
   source/imgui_impl_switch.cpp
   source/clients/ftpclient.cpp
   ${IMGUI_DIR}/imgui.cpp
@@ -76,6 +77,8 @@ target_link_libraries(${TARGET} PUBLIC
   ssl
   crypto
   m
+  minizip
+  un7zip
   z
   smb2
 )
