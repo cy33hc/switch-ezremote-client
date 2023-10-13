@@ -41,7 +41,7 @@ Tested with following WebDAV server:
 
 ## Features Native Application##
  - Transfer files back and forth between Switch and FTP/SMB/WebDAV server
- - File management function include cut/copy/paste/rename/delete/new folder/file for files on Switch SD Card
+ - File management function include cut/copy/paste/edit/rename/delete/new folder/file for files on Switch SD Card
 
 ## Controls
 ```
