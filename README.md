@@ -93,7 +93,7 @@ Ryukyuan
 Thai
 Turkish
 ```
-User must modify the file **ux0:/data/RMTCLI001/config.ini** and update the **language** setting with the **exact** values from the list above.
+User must modify the file **/switch/ezremote-client/config.ini** and update the **language** setting with the **exact** values from the list above.
 
 **HELP:** There are no language translations for the following languages, therefore not support yet. Please help expand the list by submitting translation for the following languages. If you would like to help, please download this [Template](https://github.com/cy33hc/switch-ezremote-client/blob/master/lang/English.ini), make your changes and submit an issue with the file attached.
 ```
