@@ -22,6 +22,7 @@ int max_edit_file_size;
 std::vector<std::string> sites;
 std::map<std::string, RemoteSettings> site_settings;
 std::set<std::string> text_file_extensions;
+std::set<std::string> image_file_extensions;
 RemoteSettings *remote_settings;
 RemoteClient *remoteclient;
 
@@ -37,6 +38,7 @@ namespace CONFIG
 
         sites = {"Site 1", "Site 2", "Site 3", "Site 4", "Site 5", "Site 6", "Site 7", "Site 8", "Site 9"};
         text_file_extensions = { ".txt", ".ini", ".log", ".json", ".xml", ".html", ".xhtml", ".conf", ".config" };
+        image_file_extensions = { ".gif", ".bmp", ".jpg", ".jpeg", ".png", ".webp" };
 
         OpenIniFile(CONFIG_INI_FILE);
 

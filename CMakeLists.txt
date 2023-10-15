@@ -13,19 +13,18 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
 
 set(TARGET ${PROJECT_NAME})
 set(IMGUI_DIR third_parties/imgui)
+set(LIBNSBMP third_parties/libnsbmp)
 add_definitions("-D_U_=")
 add_definitions("-DHAVE_STRING_H -DHAVE_STDLIB_H -DHAVE_NETINET_IN_H -DHAVE_NETINET_TCP_H")
 
 include_directories(
   source
   source/pugixml
+  third_parties
+  ${LIBNSBMP}
 )
 
 add_executable(${TARGET}
-  source/main.cpp
-  source/inifile.c
-  source/lang.cpp
-  source/fs.cpp
   source/pugixml/pugixml.cpp
   source/webdav/callback.cpp
   source/webdav/client.cpp
@@ -36,6 +35,10 @@ add_executable(${TARGET}
   source/clients/smbclient.cpp
   source/clients/ftpclient.cpp
   source/clients/webdavclient.cpp
+  source/main.cpp
+  source/inifile.c
+  source/lang.cpp
+  source/fs.cpp
   source/actions.cpp
   source/gui.cpp
   source/windows.cpp
@@ -43,7 +46,8 @@ add_executable(${TARGET}
   source/ime_dialog.cpp
   source/zip_util.cpp
   source/imgui_impl_switch.cpp
-  source/clients/ftpclient.cpp
+  source/textures.cpp
+  ${LIBNSBMP}/libnsbmp.c
   ${IMGUI_DIR}/imgui.cpp
   ${IMGUI_DIR}/imgui_draw.cpp
   ${IMGUI_DIR}/imgui_tables.cpp
@@ -72,7 +76,10 @@ target_link_libraries(${TARGET} PUBLIC
   drm_nouveau
   freetype
   bz2
+  turbojpeg
+  jpeg
   png
+  webp
   curl
   ssl
   crypto

@@ -11,11 +11,15 @@
 #include "lang.h"
 #include "ime_dialog.h"
 #include "IconsFontAwesome6.h"
+#include "textures.h"
 
 extern "C"
 {
 #include "inifile.h"
 }
+
+#define MAX_IMAGE_WIDTH 1280
+#define MAX_IMAGE_HEIGHT 720
 
 static u64 pad_prev;
 bool paused = false;
@@ -69,6 +73,10 @@ bool editor_modified = false;
 char edit_file[256];
 int edit_line_to_select = -1;
 std::string copy_text;
+
+// Images varaibles
+bool view_image= false;
+Tex texture;
 
 bool show_pkg_info = false;
 std::map<std::string, std::string> sfo_params;
@@ -455,7 +463,11 @@ namespace Windows
                     if (dot_pos != std::string::npos)
                     {
                         std::string ext = filename.substr(dot_pos);
-                        if (text_file_extensions.find(ext) != text_file_extensions.end())
+                        if (image_file_extensions.find(ext) != image_file_extensions.end())
+                        {
+                            selected_action = ACTION_VIEW_LOCAL_IMAGE;
+                        }
+                        else if (text_file_extensions.find(ext) != text_file_extensions.end())
                         {
                             selected_action = ACTION_LOCAL_EDIT;
                         }
@@ -612,7 +624,11 @@ namespace Windows
                     if (dot_pos != std::string::npos)
                     {
                         std::string ext = filename.substr(dot_pos);
-                        if (text_file_extensions.find(ext) != text_file_extensions.end())
+                        if (image_file_extensions.find(ext) != image_file_extensions.end())
+                        {
+                            selected_action = ACTION_VIEW_REMOTE_IMAGE;
+                        }
+                        else if (text_file_extensions.find(ext) != text_file_extensions.end())
                         {
                             selected_action = ACTION_REMOTE_EDIT;
                         }
@@ -1332,6 +1348,59 @@ namespace Windows
         }
     }
 
+    void ShowImageDialog()
+    {
+        if (view_image)
+        {
+            ImGuiIO &io = ImGui::GetIO();
+            (void)io;
+            ImGuiStyle *style = &ImGui::GetStyle();
+            ImVec4 *colors = style->Colors;
+
+            ImVec2 image_size;
+            ImVec2 image_pos;
+            ImVec2 view_size;
+            image_size.x = texture.width;
+            image_size.y = texture.height;
+            if (texture.width > MAX_IMAGE_WIDTH || texture.height > MAX_IMAGE_HEIGHT)
+            {
+                if (texture.width > texture.height)
+                {
+                    image_size.x = MAX_IMAGE_WIDTH;
+                    image_size.y = (texture.height * 1.0f / texture.width * 1.0f) * MAX_IMAGE_WIDTH;
+                }
+                else
+                {
+                    image_size.y = MAX_IMAGE_HEIGHT;
+                    image_size.x = (texture.width * 1.0f / texture.height * 1.0f) * MAX_IMAGE_HEIGHT;
+                }
+            }
+            view_size.x = image_size.x;
+            view_size.y = image_size.y;
+            image_pos.x = (1280 - view_size.x) / 2;
+            image_pos.y = (720 - view_size.y) / 2;
+
+            SetModalMode(true);
+            ImGui::OpenPopup(lang_strings[STR_VIEW_IMAGE]);
+
+            ImGui::SetNextWindowPos(image_pos);
+            ImGui::SetNextWindowSizeConstraints(image_size, view_size, NULL, NULL);
+            if (ImGui::BeginPopupModal(lang_strings[STR_VIEW_IMAGE], NULL, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                ImGui::SetCursorPos(ImVec2(0,0));
+                ImGui::Image(texture.id, image_size);
+                if (ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight, false))
+                {
+                    view_image = false;
+                    SetModalMode(false);
+                    Textures::Free(texture);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+        }
+    }
+
     void MainWindow()
     {
         Windows::SetupWindow();
@@ -1349,6 +1418,7 @@ namespace Windows
             ShowProgressDialog();
             ShowActionsDialog();
             ShowEditorDialog();
+            ShowImageDialog();
         }
         ImGui::End();
     }
@@ -1547,6 +1617,24 @@ namespace Windows
                 }
                 selected_action = ACTION_NONE;
             }
+            break;
+        case ACTION_VIEW_LOCAL_IMAGE:
+            if (Textures::LoadImageFile(selected_local_file.path, texture))
+            {
+                view_image = true;
+            }
+            selected_action = ACTION_NONE;
+            break;
+        case ACTION_VIEW_REMOTE_IMAGE:
+            {
+                std::string image_file = TMP_IMAGE_PATH + FS::GetFileExt(selected_remote_file.name);
+                remoteclient->Get(image_file, selected_remote_file.path);
+                if (Textures::LoadImageFile(image_file, texture))
+                {
+                    view_image = true;
+                }
+            }
+            selected_action = ACTION_NONE;
             break;
         case ACTION_LOCAL_EDIT:
             if (selected_local_file.file_size > max_edit_file_size)

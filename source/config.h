@@ -12,6 +12,7 @@
 #define DATA_PATH "/switch/" APP_ID
 #define CONFIG_INI_FILE DATA_PATH "/config.ini"
 #define TMP_EDITOR_FILE DATA_PATH "/tmp_editor.txt"
+#define TMP_IMAGE_PATH DATA_PATH "/tmp_image"
 
 #define CONFIG_GLOBAL "Global"
 
@@ -44,6 +45,7 @@ extern bool swap_xo;
 extern std::vector<std::string> sites;
 extern std::map<std::string, RemoteSettings> site_settings;
 extern std::set<std::string> text_file_extensions;
+extern std::set<std::string> image_file_extensions;
 extern char local_directory[255];
 extern char remote_directory[255];
 extern char app_ver[6];

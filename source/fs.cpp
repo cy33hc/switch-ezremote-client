@@ -504,4 +504,10 @@ namespace FS
     {
         return Rename(from, to);
     }
+
+    std::string GetFileExt(const std::string &filename) {
+        std::string ext = std::filesystem::path(filename).extension();
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
+        return ext;
+    }
 }
