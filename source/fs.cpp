@@ -256,6 +256,7 @@ namespace FS
         {
             struct dirent *dirent;
             DirEntry entry;
+            entry.selectable = true;
             dirent = readdir(fd);
             if (dirent == NULL)
             {
@@ -433,6 +434,21 @@ namespace FS
         return path1 + "/" + path2;
     }
 
+    int Head(const std::string &path, void *buffer, uint16_t len)
+    {
+        FILE *file = OpenRead(path);
+        if (file == nullptr)
+            return 0;
+        int ret = Read(file, buffer, len);
+        if (ret != len)
+        {
+            Close(file);
+            return 0;
+        }
+        Close(file);
+        return 1;
+    }
+
     bool Copy(const std::string &from, const std::string &to)
     {
         MkDirs(to, true);
@@ -488,5 +504,11 @@ namespace FS
     bool Move(const std::string &from, const std::string &to)
     {
         return Rename(from, to);
+    }
+
+    std::string GetFileExt(const std::string &filename) {
+        std::string ext = std::filesystem::path(filename).extension();
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
+        return ext;
     }
 }

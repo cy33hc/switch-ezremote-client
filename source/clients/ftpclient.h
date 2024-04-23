@@ -87,6 +87,7 @@ public:
 	int Head(const std::string &path, void *buffer, uint64_t len);
 	std::vector<DirEntry> ListDir(const std::string &path);
 	void SetCallbackXferFunction(FtpCallbackXfer pointer);
+	FtpCallbackXfer GetCallbackXferFunction();
 	void SetCallbackArg(void *arg);
 	void SetCallbackBytes(int64_t bytes);
 	bool Noop();

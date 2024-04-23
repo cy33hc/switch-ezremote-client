@@ -36,6 +36,7 @@ enum ACTIONS
     ACTION_DISCONNECT,
     ACTION_DISCONNECT_AND_EXIT,
     ACTION_EXTRACT_LOCAL_ZIP,
+    ACTION_EXTRACT_REMOTE_ZIP,
     ACTION_CREATE_LOCAL_ZIP,
     ACTION_LOCAL_CUT,
     ACTION_LOCAL_COPY,
@@ -87,6 +88,12 @@ namespace Actions
     void Disconnect();
     void SelectAllLocalFiles();
     void SelectAllRemoteFiles();
+    void ExtractZipThread(void *argp);
+    void ExtractLocalZips();
+    void ExtractRemoteZipThread(void *argp);
+    void ExtractRemoteZips();
+    void MakeZipThread(void *argp);
+    void MakeLocalZip();
     void MoveLocalFilesThread(void *argp);
     void MoveLocalFiles();
     void CopyLocalFilesThread(void *argp);

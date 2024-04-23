@@ -233,6 +233,32 @@ int SmbClient::Get(const std::string &outputfile, const std::string &ppath, uint
 	return 1;
 }
 
+int SmbClient::GetRange(const std::string &ppath, void *buffer, uint64_t size, uint64_t offset)
+{
+	std::string path = std::string(ppath);
+	path = Util::Trim(path, "/");
+	int64_t filesize;
+	if (!Size(path.c_str(), &filesize))
+	{
+		return 0;
+	}
+
+	struct smb2fh* in = smb2_open(smb2, path.c_str(), O_RDONLY);
+	if (in == NULL)
+	{
+		return 0;
+	}
+
+	smb2_lseek(smb2, in, offset, SEEK_SET, NULL);
+
+	int count = smb2_read(smb2, in, (uint8_t*)buffer, size);
+	smb2_close(smb2, in);
+	if (count != size)
+		return 0;
+
+	return 1;
+}
+
 int SmbClient::Copy(const std::string &ffrom, const std::string &tto)
 {
 	snprintf(response, 1023, "%s", lang_strings[STR_UNSUPPORTED_OPERATION_MSG]);

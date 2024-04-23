@@ -1,14 +1,21 @@
 #include <string.h>
+#include <minizip/unzip.h>
 #include "common.h"
 #include "config.h"
 #include "windows.h"
 #include "clients/remote_client.h"
+#include "clients/apache.h"
+#include "clients/iis.h"
+#include "clients/nginx.h"
+#include "clients/npxserve.h"
+#include "clients/rclone.h"
 #include "clients/smbclient.h"
 #include "clients/ftpclient.h"
-#include "clients/webdavclient.h"
+#include "clients/webdav.h"
 #include "util.h"
 #include "lang.h"
 #include "actions.h"
+#include "zip_util.h"
 
 namespace Actions
 {
@@ -652,12 +659,174 @@ namespace Actions
         threadExit();
     }
 
+    void ExtractZipThread(void *argp)
+    {
+        FS::MkDirs(extract_zip_folder);
+        std::vector<DirEntry> files;
+        if (multi_selected_local_files.size() > 0)
+            std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(files));
+        else
+            files.push_back(selected_local_file);
+
+        for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
+        {
+            if (stop_activity)
+                break;
+            if (!it->isDir)
+            {
+                int ret = ZipUtil::Extract(*it, extract_zip_folder);
+                if (ret == 0)
+                {
+                    sprintf(status_message, "%s %s", lang_strings[STR_FAILED_TO_EXTRACT], it->name);
+                    svcSleepThread(100000000ull);
+                }
+            }
+        }
+        activity_inprogess = false;
+        multi_selected_local_files.clear();
+        Windows::SetModalMode(false);
+        selected_action = ACTION_REFRESH_LOCAL_FILES;
+        return NULL;
+    }
+
+    void ExtractLocalZips()
+    {
+        sprintf(status_message, "%s", "");
+        int res = threadCreate(&bk_activity_thid, ExtractZipThread, NULL, NULL, 0x10000, 0x3B, -2);
+        if (R_FAILED(res))
+        {
+            file_transfering = false;
+            activity_inprogess = false;
+            multi_selected_local_files.clear();
+            Windows::SetModalMode(false);
+            threadClose(&bk_activity_thid);
+        }
+        else
+        {
+            threadStart(&bk_activity_thid);
+        }
+    }
+
+    void ExtractRemoteZipThread(void *argp)
+    {
+        FS::MkDirs(extract_zip_folder);
+        std::vector<DirEntry> files;
+        if (multi_selected_remote_files.size() > 0)
+            std::copy(multi_selected_remote_files.begin(), multi_selected_remote_files.end(), std::back_inserter(files));
+        else
+            files.push_back(selected_remote_file);
+
+        for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
+        {
+            if (stop_activity)
+                break;
+            if (!it->isDir)
+            {
+                int ret = ZipUtil::Extract(*it, extract_zip_folder, remoteclient);
+                if (ret == 0)
+                {
+                    sprintf(status_message, "%s %s", lang_strings[STR_FAILED_TO_EXTRACT], it->name);
+                    svcSleepThread(100000000ull);
+                }
+            }
+        }
+        activity_inprogess = false;
+        multi_selected_remote_files.clear();
+        Windows::SetModalMode(false);
+        selected_action = ACTION_REFRESH_LOCAL_FILES;
+        return NULL;
+    }
+
+    void ExtractRemoteZips()
+    {
+        sprintf(status_message, "%s", "");
+        int res = threadCreate(&bk_activity_thid, ExtractRemoteZipThread, NULL, NULL, 0x10000, 0x3B, -2);
+        if (R_FAILED(res))
+        {
+            file_transfering = false;
+            activity_inprogess = false;
+            multi_selected_remote_files.clear();
+            Windows::SetModalMode(false);
+            threadClose(&bk_activity_thid);
+        }
+        else
+        {
+            threadStart(&bk_activity_thid);
+        }
+    }
+
+    void MakeZipThread(void *argp)
+    {
+        zipFile zf = zipOpen64(zip_file_path, APPEND_STATUS_CREATE);
+        if (zf != NULL)
+        {
+            std::vector<DirEntry> files;
+            if (multi_selected_local_files.size() > 0)
+                std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(files));
+            else
+                files.push_back(selected_local_file);
+
+            for (std::vector<DirEntry>::iterator it = files.begin(); it != files.end(); ++it)
+            {
+                if (stop_activity)
+                    break;
+                int res = ZipUtil::ZipAddPath(zf, it->path, strlen(it->directory) + 1, -1);
+                if (res <= 0)
+                {
+                    sprintf(status_message, "%s", lang_strings[STR_ERROR_CREATE_ZIP]);
+                    svcSleepThread(1000000000ull);
+                }
+            }
+            zipClose(zf, NULL);
+        }
+        else
+        {
+            sprintf(status_message, "%s", lang_strings[STR_ERROR_CREATE_ZIP]);
+        }
+        activity_inprogess = false;
+        multi_selected_local_files.clear();
+        Windows::SetModalMode(false);
+        selected_action = ACTION_REFRESH_LOCAL_FILES;
+        return NULL;
+    }
+
+    void MakeLocalZip()
+    {
+        sprintf(status_message, "%s", "");
+        int res = threadCreate(&bk_activity_thid, MakeZipThread, NULL, NULL, 0x10000, 0x3B, -2);
+        if (R_FAILED(res))
+        {
+            file_transfering = false;
+            activity_inprogess = false;
+            multi_selected_local_files.clear();
+            Windows::SetModalMode(false);
+            threadClose(&bk_activity_thid);
+        }
+        else
+        {
+            threadStart(&bk_activity_thid);
+        }
+    }
+
     void Connect()
     {
         CONFIG::SaveConfig();
         if (strncmp(remote_settings->server, "webdavs://", 10) == 0 || strncmp(remote_settings->server, "webdav://", 9) == 0)
         {
-            remoteclient = new WebDAV::WebDavClient();
+            remoteclient = new WebDAVClient();
+        }
+        else if (strncmp(remote_settings->server, "https://", 8) == 0 || strncmp(remote_settings->server, "http://", 7) == 0)
+        {
+            if (strcmp(remote_settings->http_server_type, HTTP_SERVER_APACHE) == 0)
+                remoteclient = new ApacheClient();
+            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_MS_IIS) == 0)
+                remoteclient = new IISClient();
+            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_NGINX) == 0)
+                remoteclient = new NginxClient();
+            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_NPX_SERVE) == 0)
+                remoteclient = new NpxServeClient();
+            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_RCLONE) == 0)
+                remoteclient = new RCloneClient();
         }
         else if (strncmp(remote_settings->server, "smb://", 6) == 0)
         {

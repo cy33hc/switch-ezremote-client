@@ -59,7 +59,9 @@ namespace FS
 
     bool LoadText(std::vector<std::string> *lines, const std::string &path);
     bool SaveText(std::vector<std::string> *lines, const std::string &path);
+    int Head(const std::string &path, void* buffer, uint16_t len);
 
+    std::string GetFileExt(const std::string &filename);
 }
 
 #endif

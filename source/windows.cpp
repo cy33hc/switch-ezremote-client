@@ -11,11 +11,15 @@
 #include "lang.h"
 #include "ime_dialog.h"
 #include "IconsFontAwesome6.h"
+#include "textures.h"
 
 extern "C"
 {
 #include "inifile.h"
 }
+
+#define MAX_IMAGE_WIDTH 1280
+#define MAX_IMAGE_HEIGHT 720
 
 static u64 pad_prev;
 bool paused = false;
@@ -69,6 +73,10 @@ bool editor_modified = false;
 char edit_file[256];
 int edit_line_to_select = -1;
 std::string copy_text;
+
+// Images varaibles
+bool view_image= false;
+Tex texture;
 
 bool show_pkg_info = false;
 std::map<std::string, std::string> sfo_params;
@@ -160,6 +168,77 @@ namespace Windows
         paused = modal;
     }
 
+    std::string getUniqueZipFilename()
+    {
+        std::string zipfolder;
+        std::string zipname;
+        std::vector<DirEntry> files;
+        if (multi_selected_local_files.size() > 0)
+            std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(files));
+        else
+            files.push_back(selected_local_file);
+
+        zipfolder = files.begin()->directory;
+
+        if (files.size() == 1)
+        {
+            zipname = files.begin()->name;
+        }
+        else if (strcmp(files.begin()->directory, "/") == 0)
+        {
+            zipname = "new_zip";
+        }
+        else
+        {
+            zipname = std::string(files.begin()->directory);
+            zipname = zipname.substr(zipname.find_last_of("/") + 1);
+        }
+
+        std::string zip_path;
+        if (zipfolder == "/")
+            zip_path = zipfolder + zipname;
+        else
+            zip_path = zipfolder + "/" + zipname;
+        int i = 0;
+        while (true)
+        {
+            std::string temp_path;
+            i > 0 ? temp_path = zip_path + "(" + std::to_string(i) + ").zip" : temp_path = zip_path + ".zip";
+            if (!FS::FileExists(temp_path))
+                return temp_path;
+            i++;
+        }
+    }
+
+    std::string getExtractFolder()
+    {
+        std::string zipfolder;
+        std::vector<DirEntry> files;
+        bool local_browser_selected = saved_selected_browser & LOCAL_BROWSER;
+        bool remote_browser_selected = saved_selected_browser & REMOTE_BROWSER;
+
+        if (local_browser_selected)
+        {
+            if (multi_selected_local_files.size() > 0)
+                std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(files));
+            else
+                files.push_back(selected_local_file);
+        }
+        else
+        {
+            if (multi_selected_remote_files.size() > 0)
+                std::copy(multi_selected_remote_files.begin(), multi_selected_remote_files.end(), std::back_inserter(files));
+            else
+                files.push_back(selected_remote_file);
+        }
+
+
+        std::string filename = std::string(files.begin()->name);
+        size_t dot_pos = filename.find_last_of(".");
+        zipfolder = std::string(local_directory) + (Util::EndsWith(local_directory, "/") ? "" : "/") + filename.substr(0, dot_pos);
+        return zipfolder;
+    }
+
     void ConnectionPanel()
     {
         ImGuiStyle *style = &ImGui::GetStyle();
@@ -230,6 +309,8 @@ namespace Windows
         int width = 450;
         if (remote_settings->type == CLIENT_TYPE_NFS)
             width = 700;
+        else if (remote_settings->type == CLIENT_TYPE_HTTP_SERVER)
+            width = 380;
 
         if (ImGui::Button(id, ImVec2(width, 0)))
         {
@@ -237,17 +318,39 @@ namespace Windows
             ResetImeCallbacks();
             ime_field_size = 255;
             ime_callback = SingleValueImeCallback;
+            ime_after_update = AferServerChangeCallback;
             Dialog::initImeDialog(lang_strings[STR_SERVER], remote_settings->server, 255, SwkbdType_Normal, 0, 0);
             gui_mode = GUI_MODE_IME;
         }
         ImGui::SameLine();
 
+        if (remote_settings->type == CLIENT_TYPE_HTTP_SERVER)
+        {
+            ImGui::SetNextItemWidth(110);
+            if (ImGui::BeginCombo("##HttpServer", remote_settings->http_server_type, ImGuiComboFlags_PopupAlignLeft | ImGuiComboFlags_HeightLargest | ImGuiComboFlags_NoArrowButton))
+            {
+                for (int n = 0; n < http_servers.size(); n++)
+                {
+                    const bool is_selected = strcmp(http_servers[n].c_str(), remote_settings->http_server_type) == 0;
+                    if (ImGui::Selectable(http_servers[n].c_str(), is_selected))
+                    {
+                        sprintf(remote_settings->http_server_type, "%s", http_servers[n].c_str());
+                    }
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+        }
+
         if (remote_settings->type != CLIENT_TYPE_NFS)
         {
+            ImGui::SameLine();
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5);
             ImGui::TextColored(colors[ImGuiCol_ButtonHovered], "%s:", lang_strings[STR_USERNAME]);
-            ImGui::SameLine();
             sprintf(id, "%s##username", remote_settings->username);
+            ImGui::SameLine();
             if (ImGui::Button(id, ImVec2(100, 0)))
             {
                 ime_single_field = remote_settings->username;
@@ -371,9 +474,11 @@ namespace Windows
             set_focus_to_local = false;
             ImGui::SetWindowFocus();
         }
+
         for (int j = 0; j < local_files.size(); j++)
         {
             DirEntry item = local_files[j];
+            
             ImGui::SetColumnWidth(-1, 460);
             ImGui::PushID(i);
             auto search_item = multi_selected_local_files.find(item);
@@ -396,7 +501,11 @@ namespace Windows
                     if (dot_pos != std::string::npos)
                     {
                         std::string ext = filename.substr(dot_pos);
-                        if (text_file_extensions.find(ext) != text_file_extensions.end())
+                        if (image_file_extensions.find(ext) != image_file_extensions.end())
+                        {
+                            selected_action = ACTION_VIEW_LOCAL_IMAGE;
+                        }
+                        else if (text_file_extensions.find(ext) != text_file_extensions.end())
                         {
                             selected_action = ACTION_LOCAL_EDIT;
                         }
@@ -553,7 +662,11 @@ namespace Windows
                     if (dot_pos != std::string::npos)
                     {
                         std::string ext = filename.substr(dot_pos);
-                        if (text_file_extensions.find(ext) != text_file_extensions.end())
+                        if (image_file_extensions.find(ext) != image_file_extensions.end())
+                        {
+                            selected_action = ACTION_VIEW_REMOTE_IMAGE;
+                        }
+                        else if (text_file_extensions.find(ext) != text_file_extensions.end())
                         {
                             selected_action = ACTION_REMOTE_EDIT;
                         }
@@ -638,6 +751,7 @@ namespace Windows
         {
             flag = ImGuiSelectableFlags_None;
         }
+
         return flag;
     }
 
@@ -846,9 +960,51 @@ namespace Windows
             ImGui::PopID();
             ImGui::Separator();
 
+            ImGui::PushID("Extract##settings");
+            if (ImGui::Selectable(lang_strings[STR_EXTRACT], false, ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+            {
+                ResetImeCallbacks();
+                sprintf(extract_zip_folder, "%s", getExtractFolder().c_str());
+                ime_single_field = extract_zip_folder;
+                ime_field_size = 255;
+                ime_callback = SingleValueImeCallback;
+                if (local_browser_selected)
+                    ime_after_update = AfterExtractFolderCallback;
+                else
+                    ime_after_update = AfterExtractRemoteFolderCallback;
+                Dialog::initImeDialog(lang_strings[STR_EXTRACT_LOCATION], extract_zip_folder, 255, SwkbdType_Normal, 0, 0);
+                gui_mode = GUI_MODE_IME;
+                file_transfering = true;
+                SetModalMode(false);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PopID();
+            ImGui::Separator();
+
             flags = ImGuiSelectableFlags_Disabled;
             if (local_browser_selected)
             {
+                ImGui::PushID("Compress##settings");
+                if (ImGui::Selectable(lang_strings[STR_COMPRESS], false, getSelectableFlag(REMOTE_ACTION_NONE) | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+                {
+                    std::string zipname;
+                    std::string zipfolder;
+
+                    ResetImeCallbacks();
+                    sprintf(zip_file_path, "%s", getUniqueZipFilename().c_str());
+                    ime_single_field = zip_file_path;
+                    ime_field_size = 383;
+                    ime_callback = SingleValueImeCallback;
+                    ime_after_update = AfterZipFileCallback;
+                    Dialog::initImeDialog(lang_strings[STR_ZIP_FILE_PATH], zip_file_path, 383, SwkbdType_Normal, 0, 0);
+                    gui_mode = GUI_MODE_IME;
+                    file_transfering = true;
+                    SetModalMode(false);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+
                 flags = getSelectableFlag(REMOTE_ACTION_UPLOAD);
                 if (local_browser_selected && remoteclient != nullptr && !(remoteclient->SupportedActions() & REMOTE_ACTION_UPLOAD))
                 {
@@ -1037,6 +1193,13 @@ namespace Windows
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 190);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
             if (ImGui::Button(lang_strings[STR_CLOSE], ImVec2(100, 0)))
+            {
+                SetModalMode(false);
+                selected_action = ACTION_NONE;
+                ImGui::CloseCurrentPopup();
+            }
+
+            if (ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight, false))
             {
                 SetModalMode(false);
                 selected_action = ACTION_NONE;
@@ -1234,6 +1397,59 @@ namespace Windows
         }
     }
 
+    void ShowImageDialog()
+    {
+        if (view_image)
+        {
+            ImGuiIO &io = ImGui::GetIO();
+            (void)io;
+            ImGuiStyle *style = &ImGui::GetStyle();
+            ImVec4 *colors = style->Colors;
+
+            ImVec2 image_size;
+            ImVec2 image_pos;
+            ImVec2 view_size;
+            image_size.x = texture.width;
+            image_size.y = texture.height;
+            if (texture.width > MAX_IMAGE_WIDTH || texture.height > MAX_IMAGE_HEIGHT)
+            {
+                if (texture.width > texture.height)
+                {
+                    image_size.x = MAX_IMAGE_WIDTH;
+                    image_size.y = (texture.height * 1.0f / texture.width * 1.0f) * MAX_IMAGE_WIDTH;
+                }
+                else
+                {
+                    image_size.y = MAX_IMAGE_HEIGHT;
+                    image_size.x = (texture.width * 1.0f / texture.height * 1.0f) * MAX_IMAGE_HEIGHT;
+                }
+            }
+            view_size.x = image_size.x;
+            view_size.y = image_size.y;
+            image_pos.x = (1280 - view_size.x) / 2;
+            image_pos.y = (720 - view_size.y) / 2;
+
+            SetModalMode(true);
+            ImGui::OpenPopup(lang_strings[STR_VIEW_IMAGE]);
+
+            ImGui::SetNextWindowPos(image_pos);
+            ImGui::SetNextWindowSizeConstraints(image_size, view_size, NULL, NULL);
+            if (ImGui::BeginPopupModal(lang_strings[STR_VIEW_IMAGE], NULL, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                ImGui::SetCursorPos(ImVec2(0,0));
+                ImGui::Image(texture.id, image_size);
+                if (ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight, false))
+                {
+                    view_image = false;
+                    SetModalMode(false);
+                    Textures::Free(texture);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+        }
+    }
+
     void MainWindow()
     {
         Windows::SetupWindow();
@@ -1251,6 +1467,7 @@ namespace Windows
             ShowProgressDialog();
             ShowActionsDialog();
             ShowEditorDialog();
+            ShowImageDialog();
         }
         ImGui::End();
     }
@@ -1333,6 +1550,33 @@ namespace Windows
                 confirm_transfer_state = -1;
                 selected_action = ACTION_NONE;
             }
+            break;
+        case ACTION_EXTRACT_LOCAL_ZIP:
+            sprintf(status_message, "%s", "");
+            activity_inprogess = true;
+            sprintf(activity_message, "%s", "");
+            stop_activity = false;
+            file_transfering = true;
+            selected_action = ACTION_NONE;
+            Actions::ExtractLocalZips();
+            break;
+        case ACTION_EXTRACT_REMOTE_ZIP:
+            sprintf(status_message, "%s", "");
+            activity_inprogess = true;
+            sprintf(activity_message, "%s", "");
+            stop_activity = false;
+            file_transfering = true;
+            selected_action = ACTION_NONE;
+            Actions::ExtractRemoteZips();
+            break;
+        case ACTION_CREATE_LOCAL_ZIP:
+            sprintf(status_message, "%s", "");
+            activity_inprogess = true;
+            sprintf(activity_message, "%s", "");
+            stop_activity = false;
+            file_transfering = true;
+            selected_action = ACTION_NONE;
+            Actions::MakeLocalZip();
             break;
         case ACTION_RENAME_LOCAL:
             if (gui_mode != GUI_MODE_IME)
@@ -1431,6 +1675,24 @@ namespace Windows
                 }
                 selected_action = ACTION_NONE;
             }
+            break;
+        case ACTION_VIEW_LOCAL_IMAGE:
+            if (Textures::LoadImageFile(selected_local_file.path, texture))
+            {
+                view_image = true;
+            }
+            selected_action = ACTION_NONE;
+            break;
+        case ACTION_VIEW_REMOTE_IMAGE:
+            {
+                std::string image_file = TMP_IMAGE_PATH + FS::GetFileExt(selected_remote_file.name);
+                remoteclient->Get(image_file, selected_remote_file.path);
+                if (Textures::LoadImageFile(image_file, texture))
+                {
+                    view_image = true;
+                }
+            }
+            selected_action = ACTION_NONE;
             break;
         case ACTION_LOCAL_EDIT:
             if (selected_local_file.file_size > max_edit_file_size)
@@ -1581,6 +1843,29 @@ namespace Windows
     void CancelActionCallBack(int ime_result)
     {
         selected_action = ACTION_NONE;
+    }
+
+    void AfterExtractFolderCallback(int ime_result)
+    {
+        selected_action = ACTION_EXTRACT_LOCAL_ZIP;
+    }
+
+    void AfterExtractRemoteFolderCallback(int ime_result)
+    {
+        selected_action = ACTION_EXTRACT_REMOTE_ZIP;
+    }
+
+    void AfterZipFileCallback(int ime_result)
+    {
+        selected_action = ACTION_CREATE_LOCAL_ZIP;
+    }
+
+    void AferServerChangeCallback(int ime_result)
+    {
+        if (ime_result == IME_DIALOG_RESULT_FINISHED)
+        {
+            CONFIG::SetClientType(remote_settings);
+        }
     }
 
     void AfterEditorCallback(int ime_result)
