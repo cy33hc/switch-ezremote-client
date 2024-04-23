@@ -26,15 +26,15 @@ include_directories(
 
 add_executable(${TARGET}
   source/pugixml/pugixml.cpp
-  source/webdav/callback.cpp
-  source/webdav/client.cpp
-  source/webdav/fsinfo.cpp
-  source/webdav/header.cpp
-  source/webdav/request.cpp
-  source/webdav/urn.cpp
+  source/clients/apache.cpp
+  source/clients/baseclient.cpp
+  source/clients/iis.cpp
+  source/clients/nginx.cpp
+  source/clients/npxserve.cpp
+  source/clients/rclone.cpp
   source/clients/smbclient.cpp
   source/clients/ftpclient.cpp
-  source/clients/webdavclient.cpp
+  source/clients/webdav.cpp
   source/main.cpp
   source/inifile.c
   source/lang.cpp
@@ -70,6 +70,11 @@ target_compile_definitions(${TARGET} PUBLIC
   )
 
 target_link_libraries(${TARGET} PUBLIC
+  lexbor_static
+  archive
+  lzma
+  expat
+  httpclient
   glad
   EGL
   glapi
@@ -97,6 +102,7 @@ target_include_directories(${TARGET} PUBLIC
 
 file(COPY icons DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/romfs)
 file(COPY lang DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/romfs)
+file(COPY certs DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/romfs)
 dkp_add_asset_target(${TARGET}_romfs ${CMAKE_CURRENT_BINARY_DIR}/romfs)
 
 nx_generate_nacp(${TARGET}.nacp

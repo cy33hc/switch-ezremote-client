@@ -5,8 +5,12 @@
 #include <stdlib.h>
 #include <minizip/unzip.h>
 #include <minizip/zip.h>
+#include <archive.h>
+#include "clients/remote_client.h"
 #include "common.h"
 #include "fs.h"
+
+#define ARCHIVE_TRANSFER_SIZE 1048576
 
 static uint8_t MAGIC_ZIP_1[4] = {0x50, 0x4B, 0x03, 0x04};
 static uint8_t MAGIC_ZIP_2[4] = {0x50, 0x4B, 0x05, 0x06};
@@ -24,9 +28,20 @@ enum CompressFileType {
     COMPRESS_FILE_TYPE_UNKNOWN
 };
 
+struct RemoteArchiveData
+{
+    std::string path;
+    uint64_t size;
+    uint64_t offset;
+    uint8_t buf[ARCHIVE_TRANSFER_SIZE];
+    int buf_ref;
+    FtpCallbackXfer ftp_xfer_callbak;
+    RemoteClient *client;
+};
+
 namespace ZipUtil
 {
     int ZipAddPath(zipFile zf, const std::string &path, int filename_start, int level);
-    int Extract(const DirEntry &file, const std::string &dir);
+    int Extract(const DirEntry &file, const std::string &dir, RemoteClient *client = nullptr);
 }
 #endif

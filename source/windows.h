@@ -204,8 +204,10 @@ namespace Windows
     void AfterFolderNameCallback(int ime_result);
     void CancelActionCallBack(int ime_result);
     void AfterExtractFolderCallback(int ime_result);
+    void AfterExtractRemoteFolderCallback(int ime_result);
     void AfterZipFileCallback(int ime_result);
     void AfterEditorCallback(int ime_result);
+    void AferServerChangeCallback(int ime_result);
 }
 
 #endif

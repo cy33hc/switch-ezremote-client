@@ -214,16 +214,28 @@ namespace Windows
     {
         std::string zipfolder;
         std::vector<DirEntry> files;
+        bool local_browser_selected = saved_selected_browser & LOCAL_BROWSER;
+        bool remote_browser_selected = saved_selected_browser & REMOTE_BROWSER;
 
-        if (multi_selected_local_files.size() > 0)
-            std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(files));
+        if (local_browser_selected)
+        {
+            if (multi_selected_local_files.size() > 0)
+                std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(files));
+            else
+                files.push_back(selected_local_file);
+        }
         else
-            files.push_back(selected_local_file);
+        {
+            if (multi_selected_remote_files.size() > 0)
+                std::copy(multi_selected_remote_files.begin(), multi_selected_remote_files.end(), std::back_inserter(files));
+            else
+                files.push_back(selected_remote_file);
+        }
 
 
         std::string filename = std::string(files.begin()->name);
         size_t dot_pos = filename.find_last_of(".");
-        zipfolder = std::string(local_directory) + "/" + filename.substr(0, dot_pos);
+        zipfolder = std::string(local_directory) + (Util::EndsWith(local_directory, "/") ? "" : "/") + filename.substr(0, dot_pos);
         return zipfolder;
     }
 
@@ -297,6 +309,8 @@ namespace Windows
         int width = 450;
         if (remote_settings->type == CLIENT_TYPE_NFS)
             width = 700;
+        else if (remote_settings->type == CLIENT_TYPE_HTTP_SERVER)
+            width = 380;
 
         if (ImGui::Button(id, ImVec2(width, 0)))
         {
@@ -304,17 +318,39 @@ namespace Windows
             ResetImeCallbacks();
             ime_field_size = 255;
             ime_callback = SingleValueImeCallback;
+            ime_after_update = AferServerChangeCallback;
             Dialog::initImeDialog(lang_strings[STR_SERVER], remote_settings->server, 255, SwkbdType_Normal, 0, 0);
             gui_mode = GUI_MODE_IME;
         }
         ImGui::SameLine();
 
+        if (remote_settings->type == CLIENT_TYPE_HTTP_SERVER)
+        {
+            ImGui::SetNextItemWidth(110);
+            if (ImGui::BeginCombo("##HttpServer", remote_settings->http_server_type, ImGuiComboFlags_PopupAlignLeft | ImGuiComboFlags_HeightLargest | ImGuiComboFlags_NoArrowButton))
+            {
+                for (int n = 0; n < http_servers.size(); n++)
+                {
+                    const bool is_selected = strcmp(http_servers[n].c_str(), remote_settings->http_server_type) == 0;
+                    if (ImGui::Selectable(http_servers[n].c_str(), is_selected))
+                    {
+                        sprintf(remote_settings->http_server_type, "%s", http_servers[n].c_str());
+                    }
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+        }
+
         if (remote_settings->type != CLIENT_TYPE_NFS)
         {
+            ImGui::SameLine();
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5);
             ImGui::TextColored(colors[ImGuiCol_ButtonHovered], "%s:", lang_strings[STR_USERNAME]);
-            ImGui::SameLine();
             sprintf(id, "%s##username", remote_settings->username);
+            ImGui::SameLine();
             if (ImGui::Button(id, ImVec2(100, 0)))
             {
                 ime_single_field = remote_settings->username;
@@ -438,9 +474,11 @@ namespace Windows
             set_focus_to_local = false;
             ImGui::SetWindowFocus();
         }
+
         for (int j = 0; j < local_files.size(); j++)
         {
             DirEntry item = local_files[j];
+            
             ImGui::SetColumnWidth(-1, 460);
             ImGui::PushID(i);
             auto search_item = multi_selected_local_files.find(item);
@@ -713,6 +751,7 @@ namespace Windows
         {
             flag = ImGuiSelectableFlags_None;
         }
+
         return flag;
     }
 
@@ -921,27 +960,30 @@ namespace Windows
             ImGui::PopID();
             ImGui::Separator();
 
+            ImGui::PushID("Extract##settings");
+            if (ImGui::Selectable(lang_strings[STR_EXTRACT], false, ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
+            {
+                ResetImeCallbacks();
+                sprintf(extract_zip_folder, "%s", getExtractFolder().c_str());
+                ime_single_field = extract_zip_folder;
+                ime_field_size = 255;
+                ime_callback = SingleValueImeCallback;
+                if (local_browser_selected)
+                    ime_after_update = AfterExtractFolderCallback;
+                else
+                    ime_after_update = AfterExtractRemoteFolderCallback;
+                Dialog::initImeDialog(lang_strings[STR_EXTRACT_LOCATION], extract_zip_folder, 255, SwkbdType_Normal, 0, 0);
+                gui_mode = GUI_MODE_IME;
+                file_transfering = true;
+                SetModalMode(false);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::PopID();
+            ImGui::Separator();
+
             flags = ImGuiSelectableFlags_Disabled;
             if (local_browser_selected)
             {
-                ImGui::PushID("Extract##settings");
-                if (ImGui::Selectable(lang_strings[STR_EXTRACT], false, getSelectableFlag(REMOTE_ACTION_NONE) | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
-                {
-                    ResetImeCallbacks();
-                    sprintf(extract_zip_folder, "%s", getExtractFolder().c_str());
-                    ime_single_field = extract_zip_folder;
-                    ime_field_size = 255;
-                    ime_callback = SingleValueImeCallback;
-                    ime_after_update = AfterExtractFolderCallback;
-                    Dialog::initImeDialog(lang_strings[STR_EXTRACT_LOCATION], extract_zip_folder, 255, SwkbdType_Normal, 0, 0);
-                    gui_mode = GUI_MODE_IME;
-                    file_transfering = true;
-                    SetModalMode(false);
-                    ImGui::CloseCurrentPopup();
-                }
-                ImGui::PopID();
-                ImGui::Separator();
-
                 ImGui::PushID("Compress##settings");
                 if (ImGui::Selectable(lang_strings[STR_COMPRESS], false, getSelectableFlag(REMOTE_ACTION_NONE) | ImGuiSelectableFlags_DontClosePopups, ImVec2(220, 0)))
                 {
@@ -1151,6 +1193,13 @@ namespace Windows
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 190);
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
             if (ImGui::Button(lang_strings[STR_CLOSE], ImVec2(100, 0)))
+            {
+                SetModalMode(false);
+                selected_action = ACTION_NONE;
+                ImGui::CloseCurrentPopup();
+            }
+
+            if (ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight, false))
             {
                 SetModalMode(false);
                 selected_action = ACTION_NONE;
@@ -1511,6 +1560,15 @@ namespace Windows
             selected_action = ACTION_NONE;
             Actions::ExtractLocalZips();
             break;
+        case ACTION_EXTRACT_REMOTE_ZIP:
+            sprintf(status_message, "%s", "");
+            activity_inprogess = true;
+            sprintf(activity_message, "%s", "");
+            stop_activity = false;
+            file_transfering = true;
+            selected_action = ACTION_NONE;
+            Actions::ExtractRemoteZips();
+            break;
         case ACTION_CREATE_LOCAL_ZIP:
             sprintf(status_message, "%s", "");
             activity_inprogess = true;
@@ -1792,11 +1850,23 @@ namespace Windows
         selected_action = ACTION_EXTRACT_LOCAL_ZIP;
     }
 
+    void AfterExtractRemoteFolderCallback(int ime_result)
+    {
+        selected_action = ACTION_EXTRACT_REMOTE_ZIP;
+    }
+
     void AfterZipFileCallback(int ime_result)
     {
         selected_action = ACTION_CREATE_LOCAL_ZIP;
     }
 
+    void AferServerChangeCallback(int ime_result)
+    {
+        if (ime_result == IME_DIALOG_RESULT_FINISHED)
+        {
+            CONFIG::SetClientType(remote_settings);
+        }
+    }
 
     void AfterEditorCallback(int ime_result)
     {

@@ -256,6 +256,7 @@ namespace FS
         {
             struct dirent *dirent;
             DirEntry entry;
+            entry.selectable = true;
             dirent = readdir(fd);
             if (dirent == NULL)
             {

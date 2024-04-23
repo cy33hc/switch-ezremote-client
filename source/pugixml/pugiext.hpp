@@ -1,4 +1,4 @@
-/*#***************************************************************************
+﻿/*#***************************************************************************
 #                         __    __   _____       _____
 #   Project              |  |  |  | |     \     /  ___|
 #                        |  |__|  | |  |\  \   /  /
@@ -20,23 +20,31 @@
 #
 ############################################################################*/
 
-#include "fsinfo.hpp"
-#include <fstream>
+#ifndef WEB_PUGIEXT_HPP
+#define WEB_PUGIEXT_HPP
 
-namespace WebDAV
+#include <pugixml.hpp>
+
+namespace pugi
 {
-  namespace FileInfo
+  class PUGIXML_CLASS xml_string_writer: public xml_writer
   {
-    auto exists(const std::string& path) -> bool
-    {
-      std::ifstream file(path);
-      return file.good();
-    }
+  public:
+    std::string result;
 
-    auto size(const std::string& path_file) -> unsigned long long
+    void write(const void* data, size_t size) final
     {
-      std::ifstream file(path_file, std::ios::binary | std::ios::ate);
-      return static_cast<unsigned long long>(file.tellg());
+      result += std::string(static_cast<const char*>(data), size);
     }
-  } // namespace FileInfo
-} // namespace WebDAV
+  };
+
+  inline std::string node_to_string(const pugi::xml_node& node)
+  {
+    xml_string_writer writer;
+    node.print(writer);
+
+    return writer.result;
+  }
+} // namespace pugi
+
+#endif

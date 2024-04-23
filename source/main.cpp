@@ -53,7 +53,6 @@ namespace Services
 
     GUI::Init(fontType);
     plExit();
-    romfsExit();
 
     return 0;
   }
@@ -61,6 +60,7 @@ namespace Services
   void Exit(void)
   {
     GUI::Exit();
+    romfsExit();
     socketExit();
   }
 } // namespace Services
