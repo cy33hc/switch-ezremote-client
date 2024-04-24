@@ -72,5 +72,7 @@ namespace CONFIG
     void LoadConfig();
     void SaveConfig();
     void SetClientType(RemoteSettings *settings);
+    void SaveGlobalConfig();
 }
 #endif
+

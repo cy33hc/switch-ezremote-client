@@ -144,6 +144,7 @@ char lang_strings[LANG_STRINGS_NUM][LANG_STR_SIZE] = {
 	"Failed to init NFS context",															// STR_FAIL_INIT_NFS_CONTEXT
 	"Failed to mount NFS share",															// STR_FAIL_MOUNT_NFS_MSG
 	"View Image",																			// STR_VIEW_IMAGE
+	"Language",                                                                             // STR_LANGUAGE
 };
 
 bool needs_extended_font = false;

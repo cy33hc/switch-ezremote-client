@@ -62,6 +62,7 @@ bool set_focus_to_local = false;
 bool set_focus_to_remote = false;
 char extract_zip_folder[256];
 char zip_file_path[384];
+bool show_settings = false;
 
 // Editor variables
 std::vector<std::string> edit_buffer;
@@ -377,6 +378,19 @@ namespace Windows
             }
         }
         ImGui::PopStyleVar();
+
+        ImGui::SameLine();
+        ImGui::SetCursorPosX(1240);
+        if (ImGui::Button(ICON_FA_GEAR, ImVec2(25, 0)))
+        {
+            show_settings = true;
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            ImGui::Text("%s", lang_strings[STR_SETTINGS]);
+            ImGui::EndTooltip();
+        }
 
         ImGui::Dummy(ImVec2(0, 10));
         EndGroupPanel();
@@ -1397,6 +1411,80 @@ namespace Windows
         }
     }
 
+    void ShowSettingsDialog()
+    {
+        if (show_settings)
+        {
+            ImGuiIO &io = ImGui::GetIO();
+            (void)io;
+            ImGuiStyle *style = &ImGui::GetStyle();
+            ImVec4 *colors = style->Colors;
+
+            SetModalMode(true);
+            ImGui::OpenPopup(lang_strings[STR_SETTINGS]);
+
+            ImGui::SetNextWindowPos(ImVec2(860, 75));
+            ImGui::SetNextWindowSizeConstraints(ImVec2(400, 80), ImVec2(400, 500), NULL, NULL);
+            if (ImGui::BeginPopupModal(lang_strings[STR_SETTINGS], NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar))
+            {
+                char id[192];
+                ImVec2 field_size;
+                float width;
+                float posX = ImGui::GetCursorPosX();
+
+                ImGui::TextColored(colors[ImGuiCol_ButtonHovered], "%s", lang_strings[STR_GLOBAL]);
+                ImGui::Separator();
+                ImGui::SetCursorPosX(posX + 5);
+                ImGui::Text("%s", lang_strings[STR_LANGUAGE]);
+                ImGui::SameLine();
+                ImGui::SetCursorPosX(posX + 100);
+                ImGui::SetNextItemWidth(285);
+                if (ImGui::BeginCombo("##Language", language, ImGuiComboFlags_PopupAlignLeft | ImGuiComboFlags_HeightLargest))
+                {
+                    for (int n = 0; n < langs.size(); n++)
+                    {
+                        const bool is_selected = strcmp(langs[n].c_str(), language) == 0;
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX()+3);
+                        if (ImGui::Selectable(langs[n].c_str(), is_selected, ImGuiSelectableFlags_None, ImVec2(270, 0)))
+                        {
+                            sprintf(language, "%s", langs[n].c_str());
+                        }
+
+                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                        if (is_selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+
+                ImGui::Separator();
+                sprintf(id, "%s##settings", lang_strings[STR_CLOSE]);
+                if (ImGui::Button(id, ImVec2(385, 0)))
+                {
+                    show_settings = false;
+                    CONFIG::SaveGlobalConfig();
+                    SetModalMode(false);
+                    ImGui::CloseCurrentPopup();
+                }
+                if (ImGui::IsWindowAppearing())
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+                ImGui::SameLine();
+
+                if (ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight, false))
+                {
+                    show_settings = false;
+                    CONFIG::SaveGlobalConfig();
+                    SetModalMode(false);
+                    ImGui::CloseCurrentPopup();
+                }
+
+                ImGui::EndPopup();
+            }
+        }
+    }
+
     void ShowImageDialog()
     {
         if (view_image)
@@ -1464,6 +1552,7 @@ namespace Windows
             BrowserPanel();
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 3);
             StatusPanel();
+            ShowSettingsDialog();
             ShowProgressDialog();
             ShowActionsDialog();
             ShowEditorDialog();

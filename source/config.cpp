@@ -107,6 +107,16 @@ namespace CONFIG
         CloseIniFile();
     }
 
+    void SaveGlobalConfig()
+    {
+        OpenIniFile(CONFIG_INI_FILE);
+
+        WriteString(CONFIG_GLOBAL, CONFIG_LANGUAGE, language);
+
+        WriteIniFile(CONFIG_INI_FILE);
+        CloseIniFile();
+    }
+
     void SetClientType(RemoteSettings *setting)
     {
         if (strncmp(setting->server, "smb://", 6) == 0)
