@@ -4,12 +4,23 @@ ezRemote Client is a File Manager application that allows you to connect the Swi
 
 ![Preview](/screenshot.jpg)
 
+## Features
+ - Transfer files back and forth between Switch and FTP/SMB/WebDAV/HTTP(Apache,Ngnix,IIS,RClone,NPXServe) server
+ - File management function include cut/copy/paste/edit/rename/delete/new folder/file for files on Switch SD Card
+ - Extract zip, rar, 7zip, tar, tar.gz and tar.bz2 from Local and Remote Servers
+ - Create Zip file in local
+ - Simple Text Editor for editing text files
+ - Image viewer for jpg, png, bmp
+
 ## Installation
  - Copy ezremote-client.nro to the "/switch" folder on sdcard
  - Install [ezremote-client.nsp](https://github.com/cy33hc/switch-ezremote-client/releases/download/1.00/ezremote-client.nsp)
-   
+
+## Known Issues
+ - Occasional crash in applet mode
+
 ## Usage
-To distinguish between FTP, SMB, WebDAV, the URL must be prefix with **ftp://**, **smb://**, **webdav://**, **webdavs://**
+To distinguish between FTP, SMB, WebDAV, the URL must be prefix with **ftp://**, **smb://**, **webdav://**, **webdavs://**, **http://**, **https://**
 
  - The url format for FTP is
    ```
@@ -38,14 +49,20 @@ To distinguish between FTP, SMB, WebDAV, the URL must be prefix with **ftp://**,
      - url_path is optional based on your WebDAV hosting requiremets
    ```
   
+ - The url format for HTTP is
+   ```
+   http://hostname[:port]/[url_path]
+   https://hostname[:port]/[url_path]
+
+     - hostname can be the textual hostname or an IP address. hostname is required
+     - port is optional and defaults to 80(http) and 443(https) if not provided
+     - url_path is optional based on your WebDAV hosting requiremets
+   ```
+
 Tested with following WebDAV server:
  - **(Recommeded)** [RClone](https://rclone.org/) - For hosting your own WebDAV server. You can use RClone WebDAV server as proxy to 70+ public file hosting services (Eg. Google Drive, OneDrive, Mega, dropbox, NextCloud etc..)
  - [Dufs](https://github.com/sigoden/dufs) - For hosting your own WebDAV server.
  - [SFTPgo](https://github.com/drakkan/sftpgo) - For local hosted WebDAV server. Can also be used as a webdav frontend for Cloud Storage like AWS S3, Azure Blob or Google Storage.
-
-## Features Native Application##
- - Transfer files back and forth between Switch and FTP/SMB/WebDAV server
- - File management function include cut/copy/paste/edit/rename/delete/new folder/file for files on Switch SD Card
 
 ## Controls
 ```
