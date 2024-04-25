@@ -1,5 +1,5 @@
 #include <string.h>
-#include <minizip/unzip.h>
+#include <archive.h>
 #include "common.h"
 #include "config.h"
 #include "windows.h"
@@ -265,7 +265,7 @@ namespace Actions
     void DeleteSelectedLocalFiles()
     {
         sprintf(activity_message, "%s", "");
-        int res = threadCreate(&bk_activity_thid, DeleteSelectedLocalFilesThread, NULL, NULL, 0x10000, 0x3B, -2);
+        int res = threadCreate(&bk_activity_thid, DeleteSelectedLocalFilesThread, NULL, NULL, 0x100000, 0x3B, -2);
         if (R_FAILED(res))
         {
             threadClose(&bk_activity_thid);
@@ -315,7 +315,7 @@ namespace Actions
     void DeleteSelectedRemotesFiles()
     {
         sprintf(activity_message, "%s", "");
-        int res = threadCreate(&bk_activity_thid, DeleteSelectedRemotesFilesThread, NULL, NULL, 0x10000, 0x3B, -2);
+        int res = threadCreate(&bk_activity_thid, DeleteSelectedRemotesFilesThread, NULL, NULL, 0x100000, 0x3B, -2);
         if (R_FAILED(res))
         {
             threadClose(&bk_activity_thid);
@@ -470,7 +470,7 @@ namespace Actions
     void UploadFiles()
     {
         sprintf(activity_message, "%s", "");
-        int res = threadCreate(&bk_activity_thid, UploadFilesThread, NULL, NULL, 0x10000, 0x3B, -2);
+        int res = threadCreate(&bk_activity_thid, UploadFilesThread, NULL, NULL, 0x100000, 0x3B, -2);
         if (R_FAILED(res))
         {
             threadClose(&bk_activity_thid);
@@ -622,7 +622,7 @@ namespace Actions
     void DownloadFiles()
     {
         sprintf(status_message, "%s", "");
-        int res = threadCreate(&bk_activity_thid, DownloadFilesThread, NULL, NULL, 0x10000, 0x3B, -2);
+        int res = threadCreate(&bk_activity_thid, DownloadFilesThread, NULL, NULL, 0x100000, 0x3B, -2);
         if (R_FAILED(res))
         {
             threadClose(&bk_activity_thid);
@@ -692,7 +692,7 @@ namespace Actions
     void ExtractLocalZips()
     {
         sprintf(status_message, "%s", "");
-        int res = threadCreate(&bk_activity_thid, ExtractZipThread, NULL, NULL, 0x10000, 0x3B, -2);
+        int res = threadCreate(&bk_activity_thid, ExtractZipThread, NULL, NULL, 0x100000, 0x3B, -2);
         if (R_FAILED(res))
         {
             file_transfering = false;
@@ -740,7 +740,7 @@ namespace Actions
     void ExtractRemoteZips()
     {
         sprintf(status_message, "%s", "");
-        int res = threadCreate(&bk_activity_thid, ExtractRemoteZipThread, NULL, NULL, 0x10000, 0x3B, -2);
+        int res = threadCreate(&bk_activity_thid, ExtractRemoteZipThread, NULL, NULL, 0x100000, 0x3B, -2);
         if (R_FAILED(res))
         {
             file_transfering = false;
@@ -757,9 +757,19 @@ namespace Actions
 
     void MakeZipThread(void *argp)
     {
-        zipFile zf = zipOpen64(zip_file_path, APPEND_STATUS_CREATE);
-        if (zf != NULL)
+        int res;
+        struct archive *a = archive_write_new();
+
+        if (a != NULL)
         {
+            archive_write_set_format_zip(a);
+            archive_write_open_filename(a, zip_file_path);
+            if (res < ARCHIVE_OK)
+            {
+                sprintf(status_message, "%s", "archive_write_open_filename failed");
+                goto finish;
+            }
+
             std::vector<DirEntry> files;
             if (multi_selected_local_files.size() > 0)
                 std::copy(multi_selected_local_files.begin(), multi_selected_local_files.end(), std::back_inserter(files));
@@ -770,19 +780,28 @@ namespace Actions
             {
                 if (stop_activity)
                     break;
-                int res = ZipUtil::ZipAddPath(zf, it->path, strlen(it->directory) + 1, -1);
+
+                if (strcmp(it->path, it->directory) != 0 && strlen(it->path) > strlen(it->directory))
+                    res = ZipUtil::ZipAddPath(a, it->path, strlen(it->directory) + 1);
+                else
+                    res = -1;
+
                 if (res <= 0)
                 {
                     sprintf(status_message, "%s", lang_strings[STR_ERROR_CREATE_ZIP]);
                     svcSleepThread(1000000000ull);
+                    goto finish;
                 }
             }
-            zipClose(zf, NULL);
         }
         else
         {
             sprintf(status_message, "%s", lang_strings[STR_ERROR_CREATE_ZIP]);
         }
+
+    finish:
+        if (a != nullptr)
+            archive_write_free(a);
         activity_inprogess = false;
         multi_selected_local_files.clear();
         Windows::SetModalMode(false);
@@ -793,7 +812,8 @@ namespace Actions
     void MakeLocalZip()
     {
         sprintf(status_message, "%s", "");
-        int res = threadCreate(&bk_activity_thid, MakeZipThread, NULL, NULL, 0x10000, 0x3B, -2);
+
+        int res = threadCreate(&bk_activity_thid, MakeZipThread, NULL, NULL, 0x100000, 0x3B, -2);
         if (R_FAILED(res))
         {
             file_transfering = false;
@@ -1057,7 +1077,7 @@ namespace Actions
     void MoveLocalFiles()
     {
         snprintf(status_message, 1023, "%s", "");
-        int res = threadCreate(&bk_activity_thid, MoveLocalFilesThread, NULL, NULL, 0x10000, 0x3B, -2);
+        int res = threadCreate(&bk_activity_thid, MoveLocalFilesThread, NULL, NULL, 0x100000, 0x3B, -2);
         if (R_FAILED(res))
         {
             file_transfering = false;
@@ -1110,7 +1130,7 @@ namespace Actions
     void CopyLocalFiles()
     {
         snprintf(status_message, 1023, "%s", "");
-        int res = threadCreate(&bk_activity_thid, CopyLocalFilesThread, NULL, NULL, 0x10000, 0x3B, -2);
+        int res = threadCreate(&bk_activity_thid, CopyLocalFilesThread, NULL, NULL, 0x100000, 0x3B, -2);
         if (R_FAILED(res))
         {
             file_transfering = false;
@@ -1199,7 +1219,7 @@ namespace Actions
     void MoveRemoteFiles()
     {
         snprintf(status_message, 1023, "%s", "");
-        int res = threadCreate(&bk_activity_thid, MoveRemoteFilesThread, NULL, NULL, 0x10000, 0x3B, -2);
+        int res = threadCreate(&bk_activity_thid, MoveRemoteFilesThread, NULL, NULL, 0x100000, 0x3B, -2);
         if (R_FAILED(res))
         {
             file_transfering = false;
@@ -1323,7 +1343,7 @@ namespace Actions
     void CopyRemoteFiles()
     {
         snprintf(status_message, 1023, "%s", "");
-        int res = threadCreate(&bk_activity_thid, CopyRemoteFilesThread, NULL, NULL, 0x10000, 0x3B, -2);
+        int res = threadCreate(&bk_activity_thid, CopyRemoteFilesThread, NULL, NULL, 0x100000, 0x3B, -2);
         if (R_FAILED(res))
         {
             file_transfering = false;

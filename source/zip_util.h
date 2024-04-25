@@ -3,8 +3,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <minizip/unzip.h>
-#include <minizip/zip.h>
 #include <archive.h>
 #include "clients/remote_client.h"
 #include "common.h"
@@ -41,7 +39,7 @@ struct RemoteArchiveData
 
 namespace ZipUtil
 {
-    int ZipAddPath(zipFile zf, const std::string &path, int filename_start, int level);
+    int ZipAddPath(struct archive *a, const std::string &path, int filename_start);
     int Extract(const DirEntry &file, const std::string &dir, RemoteClient *client = nullptr);
 }
 #endif

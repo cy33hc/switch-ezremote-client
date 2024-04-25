@@ -89,8 +89,6 @@ target_link_libraries(${TARGET} PUBLIC
   ssl
   crypto
   m
-  minizip
-  un7zip
   z
   smb2
 )

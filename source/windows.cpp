@@ -793,7 +793,7 @@ namespace Windows
         bool remote_browser_selected = saved_selected_browser & REMOTE_BROWSER;
         if (local_browser_selected)
         {
-            ImGui::SetNextWindowPos(ImVec2(210, 220));
+            ImGui::SetNextWindowPos(ImVec2(210, 190));
         }
         else if (remote_browser_selected)
         {
@@ -1250,8 +1250,10 @@ namespace Windows
                 if (file_transfering)
                 {
                     static float progress = 0.0f;
+                    static char progress_text[32];
                     progress = (float)bytes_transfered / (float)bytes_to_download;
-                    ImGui::ProgressBar(progress, ImVec2(505, 0));
+                    sprintf(progress_text, "%.2f%%", progress * 100.0f);
+                    ImGui::ProgressBar(progress, ImVec2(505, 0), progress_text);
                 }
 
                 ImGui::Separator();

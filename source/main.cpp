@@ -6,6 +6,7 @@
 #include "config.h"
 #include "lang.h"
 #include "gui.h"
+//#include "dbglogger.h"
 
 static SetLanguage lang;
 
@@ -68,6 +69,8 @@ namespace Services
 int main(int argc, char* argv[])
 {
   Services::Init();
+	//dbglogger_init();
+	//dbglogger_log("If you see this you've set up dbglogger correctly.");
 
   GUI::RenderLoop();
 
