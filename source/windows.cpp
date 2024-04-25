@@ -1672,10 +1672,7 @@ namespace Windows
         case ACTION_RENAME_LOCAL:
             if (gui_mode != GUI_MODE_IME)
             {
-                if (multi_selected_local_files.size() > 0)
-                    sprintf(editor_text, "%s", multi_selected_local_files.begin()->name);
-                else
-                    sprintf(editor_text, "%s", selected_local_file.name);
+                sprintf(editor_text, "%s", selected_local_file.name);
                 ime_single_field = editor_text;
                 ResetImeCallbacks();
                 ime_field_size = 128;
@@ -1689,10 +1686,7 @@ namespace Windows
         case ACTION_RENAME_REMOTE:
             if (gui_mode != GUI_MODE_IME)
             {
-                if (multi_selected_remote_files.size() > 0)
-                    sprintf(editor_text, "%s", multi_selected_remote_files.begin()->name);
-                else
-                    sprintf(editor_text, "%s", selected_remote_file.name);
+                sprintf(editor_text, "%s", selected_remote_file.name);
                 ime_single_field = editor_text;
                 ResetImeCallbacks();
                 ime_field_size = 128;
@@ -1914,11 +1908,11 @@ namespace Windows
         }
         else if (selected_action == ACTION_RENAME_LOCAL)
         {
-            Actions::RenameLocalFolder(multi_selected_local_files.begin()->path, editor_text);
+            Actions::RenameLocalFolder(selected_local_file.path, editor_text);
         }
         else if (selected_action == ACTION_RENAME_REMOTE)
         {
-            Actions::RenameRemoteFolder(multi_selected_remote_files.begin()->path, editor_text);
+            Actions::RenameRemoteFolder(selected_remote_file.path, editor_text);
         }
         else if (selected_action == ACTION_NEW_LOCAL_FILE)
         {
