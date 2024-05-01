@@ -239,5 +239,5 @@ ClientType WebDAVClient::clientType()
 
 uint32_t WebDAVClient::SupportedActions()
 {
-    return REMOTE_ACTION_ALL;
+    return REMOTE_ACTION_ALL ^ REMOTE_ACTION_RAW_READ;
 }

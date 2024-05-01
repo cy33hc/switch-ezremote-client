@@ -26,6 +26,9 @@ public:
     int Head(const std::string &path, void *buffer, uint64_t len);
     bool FileExists(const std::string &path);
     std::vector<DirEntry> ListDir(const std::string &path);
+    int GetRange(void *fp, void *buffer, uint64_t size, uint64_t offset);
+    void *Open(const std::string &path, int flags);
+    void Close(void *fp);
     std::string GetPath(std::string path1, std::string path2);
     std::string GetFullPath(std::string path1);
     bool IsConnected();

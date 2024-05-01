@@ -86,6 +86,9 @@ public:
     int Move(const std::string &from, const std::string &to);
 	int Head(const std::string &path, void *buffer, uint64_t len);
 	std::vector<DirEntry> ListDir(const std::string &path);
+	int GetRange(void *fp, void *buffer, uint64_t size, uint64_t offset);
+	void *Open(const std::string &path, int flags);
+	void Close(void *fp);
 	void SetCallbackXferFunction(FtpCallbackXfer pointer);
 	FtpCallbackXfer GetCallbackXferFunction();
 	void SetCallbackArg(void *arg);

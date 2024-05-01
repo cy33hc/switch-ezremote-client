@@ -237,22 +237,31 @@ int SmbClient::GetRange(const std::string &ppath, void *buffer, uint64_t size, u
 {
 	std::string path = std::string(ppath);
 	path = Util::Trim(path, "/");
-	int64_t filesize;
+	uint64_t filesize;
 	if (!Size(path.c_str(), &filesize))
 	{
 		return 0;
 	}
 
-	struct smb2fh* in = smb2_open(smb2, path.c_str(), O_RDONLY);
+	struct smb2fh *in = smb2_open(smb2, path.c_str(), O_RDONLY);
 	if (in == NULL)
 	{
 		return 0;
 	}
 
+	int ret = this->GetRange(in, buffer, size, offset);
+	smb2_close(smb2, in);
+
+	return ret;
+}
+
+int SmbClient::GetRange(void *fp, void *buffer, uint64_t size, uint64_t offset)
+{
+	struct smb2fh *in = (struct smb2fh *)fp;
+
 	smb2_lseek(smb2, in, offset, SEEK_SET, NULL);
 
-	int count = smb2_read(smb2, in, (uint8_t*)buffer, size);
-	smb2_close(smb2, in);
+	int count = smb2_read(smb2, in, (uint8_t *)buffer, size);
 	if (count != size)
 		return 0;
 
@@ -507,4 +516,18 @@ ClientType SmbClient::clientType()
 uint32_t SmbClient::SupportedActions()
 {
 	return REMOTE_ACTION_ALL ^ REMOTE_ACTION_CUT ^ REMOTE_ACTION_COPY ^ REMOTE_ACTION_PASTE;
+}
+
+void *SmbClient::Open(const std::string &ppath, int flags)
+{
+	std::string path = std::string(ppath);
+	path = Util::Trim(path, "/");
+
+	struct smb2fh *in = smb2_open(smb2, path.c_str(), flags);
+	return in;
+}
+
+void SmbClient::Close(void *fp)
+{
+	smb2_close(smb2, (struct smb2fh *)fp);
 }
