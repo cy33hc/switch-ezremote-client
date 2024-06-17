@@ -39,8 +39,13 @@ int SmbClient::Connect(const std::string &url, const std::string &user, const st
 		return 0;
 	}
 
-	smb2_context *tmp_smb2 = smb2_init_context();
-	smb_url = smb2_parse_url(tmp_smb2, url.c_str());
+	smb_url = smb2_parse_url(smb2, url.c_str());
+	if (smb_url == NULL || smb_url->share == NULL || strlen(smb_url->share) == 0)
+	{
+		sprintf(response, "Invalid SMB Url");
+		return 0;
+	}
+
 	if (pass.length() > 0)
 		smb2_set_password(smb2, pass.c_str());
 	smb2_set_security_mode(smb2, SMB2_NEGOTIATE_SIGNING_ENABLED);
@@ -52,7 +57,6 @@ int SmbClient::Connect(const std::string &url, const std::string &user, const st
 		return 0;
 	}
 	smb2_destroy_url(smb_url);
-	smb2_destroy_context(tmp_smb2);
 
 	max_read_size = smb2_get_max_read_size(smb2);
 	max_write_size = smb2_get_max_write_size(smb2);
