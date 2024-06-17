@@ -16,6 +16,7 @@
 #include "lang.h"
 #include "windows.h"
 #include "zip_util.h"
+#include "util.h"
 
 #define TRANSFER_SIZE (128 * 1024)
 
@@ -37,6 +38,7 @@ namespace ZipUtil
         entry = archive_entry_new();
 
         bytes_transfered = 0;
+        prev_tick = Util::GetTick();
         bytes_to_download = file_stat.st_size;
 
         archive_entry_set_pathname(entry, path.substr(filename_start).c_str());
@@ -359,6 +361,7 @@ namespace ZipUtil
         {
             snprintf(activity_message, 255, "%s: %s", lang_strings[STR_EXTRACTING], pathname);
             bytes_transfered = 0;
+            prev_tick = Util::GetTick();
 
             extract_file(a, e, realpathname);
         }

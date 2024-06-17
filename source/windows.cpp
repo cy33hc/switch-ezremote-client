@@ -36,6 +36,7 @@ static int ime_field_size;
 bool handle_updates = false;
 int64_t bytes_transfered;
 int64_t bytes_to_download;
+uint64_t prev_tick;
 std::vector<DirEntry> local_files;
 std::vector<DirEntry> remote_files;
 std::set<DirEntry> multi_selected_local_files;
@@ -1250,9 +1251,18 @@ namespace Windows
                 if (file_transfering)
                 {
                     static float progress = 0.0f;
+                    static double transfer_speed = 0.0f;
                     static char progress_text[32];
+                    static uint64_t cur_tick;
+                    static double tick_delta;
+
+                    cur_tick = Util::GetTick();
+                    tick_delta = (cur_tick - prev_tick) * 1.0f / 1000000.0f;
+
                     progress = (float)bytes_transfered / (float)bytes_to_download;
-                    sprintf(progress_text, "%.2f%%", progress * 100.0f);
+                    transfer_speed = (bytes_transfered * 1.0f / tick_delta) / 1048576.0f;
+
+                    sprintf(progress_text, "%.3f MB/s", transfer_speed);
                     ImGui::ProgressBar(progress, ImVec2(505, 0), progress_text);
                 }
 

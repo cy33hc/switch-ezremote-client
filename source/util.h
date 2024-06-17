@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <sys/time.h>
 #include <lexbor/html/parser.h>
 #include <lexbor/dom/interfaces/element.h>
 #include "common.h"
@@ -133,5 +134,11 @@ namespace Util
         return next;
     }
 
+    static uint64_t GetTick()
+    {
+        static struct timeval tick;
+        gettimeofday(&tick, NULL);
+        return tick.tv_sec * 1000000 + tick.tv_usec;
+    }
 }
 #endif

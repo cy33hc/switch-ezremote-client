@@ -361,6 +361,7 @@ namespace Actions
 
         if (confirm_state == CONFIRM_YES)
         {
+            prev_tick = Util::GetTick();
             sprintf(activity_message, "%s %s\n", lang_strings[STR_UPLOADING], src);
             return remoteclient->Put(src, dest);
         }
@@ -406,6 +407,7 @@ namespace Actions
                     snprintf(activity_message, 1024, "%s %s", lang_strings[STR_UPLOADING], entries[i].path);
                     bytes_to_download = entries[i].file_size;
                     bytes_transfered = 0;
+                    prev_tick = Util::GetTick();
                     ret = UploadFile(entries[i].path, new_path);
                     if (ret <= 0)
                     {
@@ -425,6 +427,7 @@ namespace Actions
             snprintf(activity_message, 1024, "%s %s", lang_strings[STR_UPLOADING], src.name);
             bytes_to_download = src.file_size;
             bytes_transfered = 0;
+            prev_tick = Util::GetTick();
             ret = UploadFile(src.path, new_path);
             if (ret <= 0)
             {
@@ -485,6 +488,7 @@ namespace Actions
     {
         int ret;
         bytes_transfered = 0;
+        prev_tick = Util::GetTick();
         ret = remoteclient->Size(src, &bytes_to_download);
         if (ret == 0)
         {
@@ -517,6 +521,7 @@ namespace Actions
 
         if (confirm_state == CONFIRM_YES)
         {
+            prev_tick = Util::GetTick();
             sprintf(activity_message, "%s %s\n", lang_strings[STR_DOWNLOADING], src);
             return remoteclient->Get(dest, src);
         }
@@ -960,6 +965,7 @@ namespace Actions
 
         if (confirm_state == CONFIRM_YES)
         {
+            prev_tick = Util::GetTick();
             if (isCopy)
                 return FS::Copy(src, dest);
             else
@@ -1007,6 +1013,7 @@ namespace Actions
                     snprintf(activity_message, 1024, "%s %s", isCopy ? lang_strings[STR_COPYING] : lang_strings[STR_MOVING], entries[i].path);
                     bytes_to_download = entries[i].file_size;
                     bytes_transfered = 0;
+                    prev_tick = Util::GetTick();
                     ret = CopyOrMoveLocalFile(entries[i].path, new_path, isCopy);
                     if (ret <= 0)
                     {
@@ -1172,6 +1179,7 @@ namespace Actions
 
         if (confirm_state == CONFIRM_YES)
         {
+            prev_tick = Util::GetTick();
             if (isCopy)
                 return remoteclient->Copy(src, dest);
             else
@@ -1272,6 +1280,7 @@ namespace Actions
                     snprintf(activity_message, 1024, "%s %s", lang_strings[STR_COPYING], entries[i].path);
                     bytes_to_download = entries[i].file_size;
                     bytes_transfered = 0;
+                    prev_tick = Util::GetTick();
                     ret = CopyOrMoveRemoteFile(entries[i].path, new_path, true);
                     if (ret <= 0)
                     {
