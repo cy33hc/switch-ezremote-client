@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 # or use: /opt/devkitpro/portlibs/switch/bin/aarch64-none-elf-cmake
 include(/opt/devkitpro/cmake/Switch.cmake)
-project(ezremote-client VERSION 1.0.3 LANGUAGES C CXX)
+project(ezremote-client VERSION 1.0.4 LANGUAGES C CXX)
 set(TITLE_NAME "ezRemote Client")
 set(PROJECT_AUTHOR "cy33hc")
 
@@ -27,6 +27,7 @@ include_directories(
 add_executable(${TARGET}
   source/pugixml/pugixml.cpp
   source/clients/apache.cpp
+  source/clients/archiveorg.cpp
   source/clients/baseclient.cpp
   source/clients/iis.cpp
   source/clients/nginx.cpp

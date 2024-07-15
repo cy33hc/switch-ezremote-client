@@ -36,6 +36,7 @@
 #define HTTP_SERVER_NGINX "Nginx"
 #define HTTP_SERVER_NPX_SERVE "Serve"
 #define HTTP_SERVER_RCLONE "RClone"
+#define HTTP_SERVER_ARCHIVEORG "Archive.org"
 
 #define CONFIG_LANGUAGE "language"
 #define MAX_EDIT_FILE_SIZE 32768

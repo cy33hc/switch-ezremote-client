@@ -5,6 +5,7 @@
 #include "windows.h"
 #include "clients/remote_client.h"
 #include "clients/apache.h"
+#include "clients/archiveorg.h"
 #include "clients/iis.h"
 #include "clients/nginx.h"
 #include "clients/npxserve.h"
@@ -852,6 +853,8 @@ namespace Actions
                 remoteclient = new NpxServeClient();
             else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_RCLONE) == 0)
                 remoteclient = new RCloneClient();
+            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_ARCHIVEORG) == 0)
+                remoteclient = new ArchiveOrgClient();
         }
         else if (strncmp(remote_settings->server, "smb://", 6) == 0)
         {
