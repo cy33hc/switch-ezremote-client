@@ -34,6 +34,48 @@ bool WebDAVClient::PropFind(const std::string &path, int depth, CHTTPClient::Htt
     return client->CustomRequest("PROPFIND", encoded_path, headers, res);
 }
 
+int WebDAVClient::Size(const std::string &path, int64_t *size)
+{
+    CHTTPClient::HttpResponse res;
+
+    if (PropFind(path, 1, res))
+    {
+        pugi::xml_document document;
+        document.load_buffer(res.strBody.data(), res.strBody.size());
+        auto multistatus = document.select_node("*[local-name()='multistatus']").node();
+        auto responses = multistatus.select_nodes("*[local-name()='response']");
+        for (auto response : responses)
+        {
+            pugi::xml_node href = response.node().select_node("*[local-name()='href']").node();
+            std::string resource_path = CHTTPClient::DecodeUrl(href.first_child().value(), true);
+
+            auto target_path_without_sep = GetFullPath(path);
+            if (!target_path_without_sep.empty() && target_path_without_sep.back() == '/')
+                target_path_without_sep.resize(target_path_without_sep.length() - 1);
+            auto resource_path_without_sep = resource_path.erase(resource_path.find_last_not_of('/') + 1);
+            size_t pos = resource_path_without_sep.find(this->host_url);
+            if (pos != std::string::npos)
+                resource_path_without_sep.erase(pos, this->host_url.length());
+
+            if (resource_path_without_sep != target_path_without_sep)
+                continue;
+
+            auto propstat = response.node().select_node("*[local-name()='propstat']").node();
+            auto prop = propstat.select_node("*[local-name()='prop']").node();
+            std::string content_length = prop.select_node("*[local-name()='getcontentlength']").node().first_child().value();
+
+            *size = atoll(content_length.c_str());
+            return 1;
+        }
+    }
+    else
+    {
+        sprintf(this->response, "%s", res.errMessage.c_str());
+    }
+
+    return 0;
+}
+
 std::vector<DirEntry> WebDAVClient::ListDir(const std::string &path)
 {
     CHTTPClient::HttpResponse res;
