@@ -59,6 +59,12 @@ To distinguish between FTP, SMB, WebDAV, the URL must be prefix with **ftp://**,
      - url_path is optional based on your WebDAV hosting requiremets
    ```
 
+- For Internet Archive repos download URLs
+  - Only supports parsing of the download URL (ie the URL where you see a list of files). Example
+    |      |           |  |
+    |----------|-----------|---|
+    | ![archive_org_screen1](https://github.com/user-attachments/assets/b129b6cf-b938-4d7c-a3fa-61e1c633c1f6) | ![archive_org_screen2](https://github.com/user-attachments/assets/646106d1-e60b-4b35-b153-3475182df968)| ![image](https://github.com/user-attachments/assets/cad94de8-a694-4ef5-92a8-b87468e30adb) |
+    
 Tested with following WebDAV server:
  - **(Recommeded)** [RClone](https://rclone.org/) - For hosting your own WebDAV server. You can use RClone WebDAV server as proxy to 70+ public file hosting services (Eg. Google Drive, OneDrive, Mega, dropbox, NextCloud etc..)
  - [Dufs](https://github.com/sigoden/dufs) - For hosting your own WebDAV server.
@@ -72,6 +78,7 @@ B - Un-Select the file list to navigate to other widgets
 Y - Mark file(s)/folder(s) for Delete/Rename/Upload/Download
 R1 - Navigate to the Remote list of files
 L1 - Navigate to the Local list of files
+ZL - Go up a directory from current directory
 + - Exit Application
 ```
 
