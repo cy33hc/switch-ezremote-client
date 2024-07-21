@@ -30,6 +30,7 @@ add_executable(${TARGET}
   source/clients/archiveorg.cpp
   source/clients/baseclient.cpp
   source/clients/iis.cpp
+  source/clients/myrient.cpp
   source/clients/nginx.cpp
   source/clients/npxserve.cpp
   source/clients/rclone.cpp
