@@ -45,7 +45,7 @@ namespace CONFIG
         image_file_extensions = { ".gif", ".bmp", ".jpg", ".jpeg", ".png", ".webp" };
         langs = { "Default", "Arabic", "Catalan", "Croatian", "Dutch", "English", "Euskera", "French", "Galego", "German", "Greek", 
                   "Hungarian", "Indonesian", "Italiano", "Japanese", "Korean", "Polish", "Portuguese_BR", "Russian", "Romanian", "Ryukyuan", "Spanish", "Turkish",
-                  "Simplified Chinese", "Traditional Chinese", "Thai", "Ukrainian"};
+                  "Simplified Chinese", "Traditional Chinese", "Thai", "Ukrainian","Vietnamese"};
 
         OpenIniFile(CONFIG_INI_FILE);
 

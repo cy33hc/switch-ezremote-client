@@ -318,6 +318,18 @@ namespace GUI
 			io.Fonts->AddFontFromFileTTF("romfs:/lang/Roboto_ext.ttf", 18.0f, &font_cfg, arabic);
 		}
 
+		if (fontType & FONT_TYPE_VIETNAMESE)
+		{
+			io.Fonts->AddFontFromMemoryTTF(standard.address, standard.size, 18.0f, &font_cfg, symbols);
+			io.Fonts->AddFontFromFileTTF("romfs:/lang/Roboto_ext.ttf", 18.0f, &font_cfg, io.Fonts->GetGlyphRangesVietnamese());
+		}
+
+		if (fontType & FONT_TYPE_GREEK)
+		{
+			io.Fonts->AddFontFromMemoryTTF(standard.address, standard.size, 18.0f, &font_cfg, symbols);
+			io.Fonts->AddFontFromFileTTF("romfs:/lang/Roboto_ext.ttf", 18.0f, &font_cfg, io.Fonts->GetGlyphRangesGreek());
+		}
+
 		io.Fonts->Flags |= ImFontAtlasFlags_NoPowerOfTwoHeight;
 		io.Fonts->Build();
 

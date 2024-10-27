@@ -51,6 +51,14 @@ namespace Services
     {
       fontType = FONT_TYPE_ARABIC;
     }
+    else if (strcasecmp(language, "Vietnamese") == 0)
+    {
+      fontType = FONT_TYPE_VIETNAMESE;
+    }
+    else if (strcasecmp(language, "Greek") == 0)
+    {
+      fontType = FONT_TYPE_GREEK;
+    }
 
     GUI::Init(fontType);
     plExit();
