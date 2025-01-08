@@ -94,6 +94,7 @@ target_link_libraries(${TARGET} PUBLIC
   mbedtls
   mbedcrypto
   mbedx509
+  crypto
   z
 )
 
