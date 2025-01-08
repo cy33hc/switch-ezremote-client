@@ -74,9 +74,12 @@ target_compile_definitions(${TARGET} PUBLIC
 target_link_libraries(${TARGET} PUBLIC
   lexbor_static
   archive
+  zstd
+  lz4
   lzma
   expat
   httpclient
+  smb2
   glad
   EGL
   glapi
@@ -88,11 +91,10 @@ target_link_libraries(${TARGET} PUBLIC
   png
   webp
   curl
-  ssl
-  crypto
-  m
+  mbedtls
+  mbedcrypto
+  mbedx509
   z
-  smb2
 )
 
 target_include_directories(${TARGET} PUBLIC
