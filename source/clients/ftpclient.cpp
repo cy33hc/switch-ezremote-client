@@ -563,19 +563,6 @@ int FtpClient::FtpOpenPasv(ftphandle *nControl, ftphandle **nData, transfermode 
 		return -1;
 	}
 
-	int const size = FTP_CLIENT_BUFSIZ;
-	if (setsockopt(sData, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size)) == -1)
-	{
-		close(sData);
-		return -1;
-	}
-
-	if (setsockopt(sData, SOL_SOCKET, SO_SNDBUF, &size, sizeof(size)) == -1)
-	{
-		close(sData);
-		return -1;
-	}
-
 	if (nControl->dir != FTP_CLIENT_CONTROL)
 		return -1;
 	std::string tmp = cmd + "\r\n";
@@ -678,19 +665,6 @@ int FtpClient::FtpOpenPort(ftphandle *nControl, ftphandle **nData, transfermode 
 	}
 
 	if (setsockopt(sData, SOL_SOCKET, SO_LINGER, &lng, sizeof(lng)) == -1)
-	{
-		close(sData);
-		return -1;
-	}
-
-	int const size = FTP_CLIENT_BUFSIZ;
-	if (setsockopt(sData, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size)) == -1)
-	{
-		close(sData);
-		return -1;
-	}
-
-	if (setsockopt(sData, SOL_SOCKET, SO_SNDBUF, &size, sizeof(size)) == -1)
 	{
 		close(sData);
 		return -1;

@@ -4,6 +4,7 @@
 #include <fstream>
 #include <map>
 #include "common.h"
+#include "config.h"
 #include "clients/remote_client.h"
 #include "clients/archiveorg.h"
 #include "lang.h"
@@ -12,10 +13,80 @@
 
 static std::map<std::string, int> month_map = {{"Jan", 1}, {"Feb", 2}, {"Mar", 3}, {"Apr", 4}, {"May", 5}, {"Jun", 6}, {"Jul", 7}, {"Aug", 8}, {"Sep", 9}, {"Oct", 10}, {"Nov", 11}, {"Dec", 12}};
 
+std::string ArchiveOrgClient::GenerateRandomId(const int len)
+{
+    static const char alphanum[] = "0123456789abcdef";
+    std::string tmp_s;
+    tmp_s.reserve(len);
+
+    for (int i = 0; i < len; ++i) {
+        tmp_s += alphanum[rand() % (sizeof(alphanum) - 1)];
+    }
+    
+    return tmp_s;
+}
+
+int ArchiveOrgClient::Connect(const std::string &url, const std::string &username, const std::string &password)
+{
+    this->host_url = url;
+    size_t scheme_pos = url.find("://");
+    size_t root_pos = url.find("/", scheme_pos + 3);
+    if (root_pos != std::string::npos)
+    {
+        this->host_url = url.substr(0, root_pos);
+        this->base_path = url.substr(root_pos);
+    }
+    client = new CHTTPClient([](const std::string& log){});
+    client->InitSession(true, CHTTPClient::SettingsFlag::NO_FLAGS);
+    client->SetCertificateFile(CACERT_FILE);
+
+    client->SetCookie("donation-identifier", GenerateRandomId(32));
+    client->SetCookie("test-cookie", "1");
+    client->SetCookie("abtest-identifier", GenerateRandomId(32));
+
+    if (username.length() > 0)
+        return Login(username, password);
+    else if (Ping())
+        this->connected = true;
+    return 1;
+}
+
+int ArchiveOrgClient::Login(const std::string &username, const std::string &password)
+{
+    CHTTPClient::HeadersMap headers;
+    CHTTPClient::HttpResponse res;
+
+    std::string encoded_path = this->host_url + CHTTPClient::EncodeUrl("/account/login");
+    CHTTPClient::PostFormInfo formdata;
+    formdata.AddFormContent("username", username);
+    formdata.AddFormContent("password", password);
+    formdata.AddFormContent("remember", "true");
+    formdata.AddFormContent("referer", "https://archive.org/");
+    formdata.AddFormContent("login", "true");
+    formdata.AddFormContent("submit_by_js", "true");
+
+    if (client->UploadForm(encoded_path, headers, formdata, res))
+    {
+        if (res.cookies.size() > 0)
+        {
+            for (CHTTPClient::HeadersMap::iterator it = res.cookies.begin(); it != res.cookies.end();)
+            {
+                this->client->SetCookie(it->first, it->second);
+                ++it;
+            }
+        }
+        this->connected = true;
+        return 1;
+    }
+
+    return 0;
+}
+
 std::vector<DirEntry> ArchiveOrgClient::ListDir(const std::string &path)
 {
     CHTTPClient::HeadersMap headers;
     CHTTPClient::HttpResponse res;
+
     std::vector<DirEntry> out;
     DirEntry entry;
     Util::SetupPreviousFolder(path, &entry);
@@ -127,6 +198,13 @@ std::vector<DirEntry> ArchiveOrgClient::ListDir(const std::string &path)
             // td0 contains the <a> tag
             td_element = lxb_dom_collection_element(td_collection, 0);
             lxb_dom_node_t *a_node = Util::NextChildElement(td_element);
+            // there is no a_node in protected links
+            if (a_node == nullptr)
+            {
+                lxb_dom_collection_destroy(td_collection, true);
+                continue;
+            }
+
             value = lxb_dom_element_local_name(lxb_dom_interface_element(a_node), &value_len);
             tmp_string = std::string((const char *)value, value_len);
             if (tmp_string.compare("a") != 0)
