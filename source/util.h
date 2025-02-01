@@ -140,5 +140,31 @@ namespace Util
         gettimeofday(&tick, NULL);
         return tick.tv_sec * 1000000 + tick.tv_usec;
     }
+
+    static inline size_t NthOccurrence(const std::string &str, const std::string &findMe, int nth, size_t start_pos = 0, size_t end_pos = INT_MAX)
+    {
+        size_t prev_pos = std::string::npos;
+        size_t pos = start_pos;
+        int cnt = 0;
+
+        while (cnt != nth)
+        {
+            pos += 1;
+            pos = str.find(findMe, pos);
+            if (pos > end_pos)
+                return prev_pos;
+                
+            if (pos == std::string::npos)
+            {
+                if (cnt == 0)
+                    return std::string::npos;
+                else
+                    break;
+            }
+            prev_pos = pos;
+            cnt++;
+        }
+        return pos;
+    }
 }
 #endif
