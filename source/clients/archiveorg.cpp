@@ -271,6 +271,7 @@ std::vector<DirEntry> ArchiveOrgClient::ListDir(const std::string &path)
             tr_nth_start_pos = Util::NthOccurrence(res_body, "<tr >", 100, start_parse_pos, table_list_end_pos);
             tr_nth_end_pos = res_body.find("</tr>", tr_nth_start_pos)+5;
         }
+        res_body.clear();
     }
     else
     {
