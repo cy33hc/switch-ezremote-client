@@ -134,6 +134,7 @@ std::vector<DirEntry> MyrientClient::ListDir(const std::string &path)
                     std::string temp_name = Util::ToLower(entry.name);
                     if (temp_name.find(lower_filter) == std::string::npos)
                     {
+                        lxb_dom_collection_destroy(td_collection, true);
                         continue;
                     }
                 }
