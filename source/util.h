@@ -166,5 +166,26 @@ namespace Util
         }
         return pos;
     }
+
+    static inline size_t CountOccurrence(const std::string &str, const std::string &findMe, size_t start_pos = 0, size_t end_pos = INT_MAX)
+    {
+        size_t pos = start_pos;
+        int cnt = 0;
+        while (true)
+        {
+            pos += 1;
+            pos = str.find(findMe, pos);
+            if (pos > end_pos)
+                return cnt;
+                
+            if (pos == std::string::npos)
+            {
+                break;
+            }
+            pos += 1;
+            cnt++;
+        }
+        return cnt;
+    }
 }
 #endif

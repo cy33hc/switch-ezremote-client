@@ -104,12 +104,21 @@ std::vector<DirEntry> ArchiveOrgClient::ListDir(const std::string &path)
         std::string tmp_string;
         const lxb_char_t *value;
         size_t value_len;
+        std::string lower_filter = Util::ToLower(remote_filter);
 
         // Extract first 100 tr in the <table id="list"> element
         std::string res_body = std::string(res.strBody.data());
         res.strBody.clear();
         size_t start_parse_pos = res_body.find("<table class=\"directory-listing-table\">");
         size_t table_list_end_pos = res_body.find("</table>", start_parse_pos);
+
+        int rows = Util::CountOccurrence(res_body, "<tr >", start_parse_pos, table_list_end_pos);
+        if (apply_native_filter_state == 2 && rows > 500)
+        {
+            selected_action = ACTION_APPLY_REMOTE_NATIVE_FILTER;
+            return out;
+        }
+
         start_parse_pos = Util::NthOccurrence(res_body, "<tr >", 1, start_parse_pos, table_list_end_pos);
         size_t tr_nth_start_pos = Util::NthOccurrence(res_body, "<tr >", 100, start_parse_pos, table_list_end_pos);
         size_t tr_nth_end_pos = res_body.find("</tr>", tr_nth_start_pos) + 5;;
@@ -197,6 +206,16 @@ std::vector<DirEntry> ArchiveOrgClient::ListDir(const std::string &path)
                     sprintf(entry.path, "%s/%s", path.c_str(), entry.name);
                 }
 
+                if (apply_native_filter_state == 1)
+                {
+                    std::string temp_name = Util::ToLower(entry.name);
+                    if (temp_name.find(lower_filter) == std::string::npos)
+                    {
+                        printf("filter %s, skipping %s\n", lower_filter.c_str(), temp_name.c_str());
+                        continue;
+                    }
+                }
+
                 // next td contains the date
                 td_element = lxb_dom_collection_element(td_collection, 1);
                 value = lxb_dom_node_text_content(Util::NextChildTextNode(td_element), &value_len);
@@ -280,5 +299,6 @@ std::vector<DirEntry> ArchiveOrgClient::ListDir(const std::string &path)
     }
 
 finish:
+    apply_native_filter_state = 2;
     return out;
 }
