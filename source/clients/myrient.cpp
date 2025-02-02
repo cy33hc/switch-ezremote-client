@@ -134,7 +134,6 @@ std::vector<DirEntry> MyrientClient::ListDir(const std::string &path)
                     std::string temp_name = Util::ToLower(entry.name);
                     if (temp_name.find(lower_filter) == std::string::npos)
                     {
-                        printf("filter %s, skipping %s\n", lower_filter.c_str(), temp_name.c_str());
                         continue;
                     }
                 }
