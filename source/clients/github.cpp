@@ -20,14 +20,13 @@ int GithubClient::Connect(const std::string &url, const std::string &username, c
     this->base_path = "/repos" + url.substr(18);
     Util::Rtrim(this->base_path, "/");
     this->base_path += "/releases";
+    this->m_download_url = "https://github.com";
 
 
     client = new CHTTPClient([](const std::string& log){});
     client->SetBasicAuth(username, password);
     client->InitSession(true, CHTTPClient::SettingsFlag::NO_FLAGS);
     client->SetCertificateFile(CACERT_FILE);
-
-    m_client.Connect("https://github.com", username, password);
 
     if (Ping())
         this->connected = true;
@@ -104,7 +103,13 @@ int GithubClient::Size(const std::string &path, int64_t *size)
     return 1;
 }
 
-int GithubClient::Head(const std::string &path, void *buffer, uint64_t len)
+bool GithubClient::FileExists(const std::string &path)
+{
+    uint64_t file_size;
+    return Size(path, &file_size);
+}
+
+int GithubClient::Head(const std::string &path, void *buffer, uint64_t size)
 {
     if (!ParseReleases())
         return 0;
@@ -116,7 +121,25 @@ int GithubClient::Head(const std::string &path, void *buffer, uint64_t len)
         return 0;
     }
 
-    return m_client.Head(m_assets[path_parts[0]][path_parts[1]].url, buffer, len);
+    CHTTPClient::HttpResponse res;
+    CHTTPClient::HeadersMap headers;
+
+    char range_header[128];
+    sprintf(range_header, "bytes=%lu-%lu", 0L, size - 1);
+    headers["Range"] = range_header;
+
+    std::string encoded_url = this->m_download_url + CHTTPClient::EncodeUrl(m_assets[path_parts[0]][path_parts[1]].url);
+    if (client->Get(encoded_url, headers, res))
+    {
+        uint64_t len = MIN(size, res.strBody.size());
+        memcpy(buffer, res.strBody.data(), len);
+        return 1;
+    }
+    else
+    {
+        sprintf(this->response, "%s", res.errMessage.c_str());
+    }
+    return 0;
 }
 
 int GithubClient::Get(const std::string &outputfile, const std::string &path, uint64_t offset)
@@ -131,7 +154,28 @@ int GithubClient::Get(const std::string &outputfile, const std::string &path, ui
         return 0;
     }
 
-    return m_client.Get(outputfile, m_assets[path_parts[0]][path_parts[1]].url, offset);  
+    long status;
+    bytes_transfered = 0;
+    prev_tick = Util::GetTick();
+    CHTTPClient::HeadersMap headers;
+
+    if (!Size(path, &bytes_to_download))
+    {
+        sprintf(this->response, "%s", lang_strings[STR_FAIL_DOWNLOAD_MSG]);
+        return 0;
+    }
+
+    client->SetProgressFnCallback(&bytes_transfered, DownloadProgressCallback);
+    std::string encoded_url = this->m_download_url + CHTTPClient::EncodeUrl(m_assets[path_parts[0]][path_parts[1]].url);
+    if (client->DownloadFile(outputfile, encoded_url, status))
+    {
+        return 1;
+    }
+    else
+    {
+        sprintf(this->response, "%ld - %s", status, lang_strings[STR_FAIL_DOWNLOAD_MSG]);
+    }
+    return 0;
 }
 
 int GithubClient::GetRange(const std::string &path, void *buffer, uint64_t size, uint64_t offset)
@@ -146,7 +190,25 @@ int GithubClient::GetRange(const std::string &path, void *buffer, uint64_t size,
         return 0;
     }
 
-    return m_client.GetRange(m_assets[path_parts[0]][path_parts[1]].url, buffer, size, offset);  
+    CHTTPClient::HttpResponse res;
+    CHTTPClient::HeadersMap headers;
+
+    char range_header[128];
+    sprintf(range_header, "bytes=%lu-%lu", offset, offset + size - 1);
+    headers["Range"] = range_header;
+
+    std::string encoded_url = this->m_download_url + CHTTPClient::EncodeUrl(m_assets[path_parts[0]][path_parts[1]].url);
+    if (client->Get(encoded_url, headers, res))
+    {
+        uint64_t len = MIN(size, res.strBody.size());
+        memcpy(buffer, res.strBody.data(), len);
+        return 1;
+    }
+    else
+    {
+        sprintf(this->response, "%s", res.errMessage.c_str());
+    }
+    return 0;
 }
 
 bool GithubClient::ParseReleases()
@@ -228,17 +290,3 @@ bool GithubClient::ParseReleases()
 
     return 1;
 }
-
-int GithubClient::Quit()
-{
-    m_client.Quit();
-    
-    if (client != nullptr)
-    {
-        client->CleanupSession();
-        delete client;
-        client = nullptr;
-    }
-    return 1;
-}
-
