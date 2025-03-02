@@ -6,6 +6,7 @@
 #include "clients/remote_client.h"
 #include "clients/apache.h"
 #include "clients/archiveorg.h"
+#include "clients/github.h"
 #include "clients/iis.h"
 #include "clients/myrient.h"
 #include "clients/nginx.h"
@@ -860,6 +861,8 @@ namespace Actions
                 remoteclient = new ArchiveOrgClient();
             else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_MYRIENT) == 0)
                 remoteclient = new MyrientClient();
+            else if (strcmp(remote_settings->http_server_type, HTTP_SERVER_GITHUB) == 0)
+                remoteclient = new GithubClient();
         }
         else if (strncmp(remote_settings->server, "smb://", 6) == 0)
         {

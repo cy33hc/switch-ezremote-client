@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 # or use: /opt/devkitpro/portlibs/switch/bin/aarch64-none-elf-cmake
 include(/opt/devkitpro/cmake/Switch.cmake)
-project(ezremote-client VERSION 1.0.11 LANGUAGES C CXX)
+project(ezremote-client VERSION 1.0.12 LANGUAGES C CXX)
 set(TITLE_NAME "ezRemote Client")
 set(PROJECT_AUTHOR "cy33hc")
 
@@ -29,6 +29,7 @@ add_executable(${TARGET}
   source/clients/apache.cpp
   source/clients/archiveorg.cpp
   source/clients/baseclient.cpp
+  source/clients/github.cpp
   source/clients/iis.cpp
   source/clients/myrient.cpp
   source/clients/nginx.cpp
@@ -80,6 +81,7 @@ target_link_libraries(${TARGET} PUBLIC
   expat
   httpclient
   smb2
+  json-c
   glad
   EGL
   glapi
