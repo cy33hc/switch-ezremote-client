@@ -1424,7 +1424,7 @@ namespace Windows
                         ime_field_size = 1023;
                         ime_after_update = AfterEditorCallback;
                         ime_callback = SingleValueImeCallback;
-                        Dialog::initImeDialog(lang_strings[STR_EDIT], edit_line, 1023, SwkbdType_Normal, 0, 0);
+                        Dialog::initImeDialog(lang_strings[STR_EDIT], edit_line, 1023, SwkbdType_All, 0, 0);
                         gui_mode = GUI_MODE_IME;
                     }
                     ImGui::PopStyleVar();
