@@ -366,7 +366,7 @@ namespace Windows
                 ResetImeCallbacks();
                 ime_field_size = 32;
                 ime_callback = SingleValueImeCallback;
-                Dialog::initImeDialog(lang_strings[STR_USERNAME], remote_settings->username, 32, SwkbdType_Normal, 0, 0);
+                Dialog::initImeDialog(lang_strings[STR_USERNAME], remote_settings->username, 32, SwkbdType_All, 0, 0);
                 gui_mode = GUI_MODE_IME;
             }
             ImGui::SameLine();
@@ -381,7 +381,7 @@ namespace Windows
                 ResetImeCallbacks();
                 ime_field_size = 127;
                 ime_callback = SingleValueImeCallback;
-                Dialog::initImeDialog(lang_strings[STR_PASSWORD], remote_settings->password, 127, SwkbdType_Normal, 0, 0);
+                Dialog::initImeDialog(lang_strings[STR_PASSWORD], remote_settings->password, 127, SwkbdType_All, 0, 0);
                 gui_mode = GUI_MODE_IME;
             }
         }
@@ -428,7 +428,7 @@ namespace Windows
             ime_field_size = 255;
             ime_after_update = AfterLocalFileChangesCallback;
             ime_callback = SingleValueImeCallback;
-            Dialog::initImeDialog(lang_strings[STR_DIRECTORY], local_directory, 256, SwkbdType_Normal, 0, 0);
+            Dialog::initImeDialog(lang_strings[STR_DIRECTORY], local_directory, 256, SwkbdType_All, 0, 0);
             gui_mode = GUI_MODE_IME;
         }
         ImGui::PopID();
@@ -465,7 +465,7 @@ namespace Windows
             ResetImeCallbacks();
             ime_field_size = 63;
             ime_callback = SingleValueImeCallback;
-            Dialog::initImeDialog(lang_strings[STR_FILTER], local_filter, 63, SwkbdType_Normal, 0, 0);
+            Dialog::initImeDialog(lang_strings[STR_FILTER], local_filter, 63, SwkbdType_All, 0, 0);
             gui_mode = GUI_MODE_IME;
         }
         ImGui::PopID();
@@ -613,7 +613,7 @@ namespace Windows
             ime_field_size = 255;
             ime_after_update = AfterRemoteFileChangesCallback;
             ime_callback = SingleValueImeCallback;
-            Dialog::initImeDialog(lang_strings[STR_DIRECTORY], remote_directory, 256, SwkbdType_Normal, 0, 0);
+            Dialog::initImeDialog(lang_strings[STR_DIRECTORY], remote_directory, 256, SwkbdType_All, 0, 0);
             gui_mode = GUI_MODE_IME;
         }
         ImGui::PopID();
@@ -650,7 +650,7 @@ namespace Windows
             ResetImeCallbacks();
             ime_field_size = 63;
             ime_callback = SingleValueImeCallback;
-            Dialog::initImeDialog(lang_strings[STR_FILTER], remote_filter, 63, SwkbdType_Normal, 0, 0);
+            Dialog::initImeDialog(lang_strings[STR_FILTER], remote_filter, 63, SwkbdType_All, 0, 0);
             gui_mode = GUI_MODE_IME;
         };
         ImGui::PopID();
@@ -1055,7 +1055,7 @@ namespace Windows
                     ime_after_update = AfterExtractFolderCallback;
                 else
                     ime_after_update = AfterExtractRemoteFolderCallback;
-                Dialog::initImeDialog(lang_strings[STR_EXTRACT_LOCATION], extract_zip_folder, 255, SwkbdType_Normal, 0, 0);
+                Dialog::initImeDialog(lang_strings[STR_EXTRACT_LOCATION], extract_zip_folder, 255, SwkbdType_All, 0, 0);
                 gui_mode = GUI_MODE_IME;
                 file_transfering = true;
                 SetModalMode(false);
@@ -1079,7 +1079,7 @@ namespace Windows
                     ime_field_size = 383;
                     ime_callback = SingleValueImeCallback;
                     ime_after_update = AfterZipFileCallback;
-                    Dialog::initImeDialog(lang_strings[STR_ZIP_FILE_PATH], zip_file_path, 383, SwkbdType_Normal, 0, 0);
+                    Dialog::initImeDialog(lang_strings[STR_ZIP_FILE_PATH], zip_file_path, 383, SwkbdType_All, 0, 0);
                     gui_mode = GUI_MODE_IME;
                     file_transfering = true;
                     SetModalMode(false);
@@ -1678,7 +1678,7 @@ namespace Windows
                 ime_after_update = AfterFolderNameCallback;
                 ime_cancelled = CancelActionCallBack;
                 ime_callback = SingleValueImeCallback;
-                Dialog::initImeDialog(lang_strings[STR_NEW_FOLDER], editor_text, 128, SwkbdType_Normal, 0, 0);
+                Dialog::initImeDialog(lang_strings[STR_NEW_FOLDER], editor_text, 128, SwkbdType_All, 0, 0);
                 gui_mode = GUI_MODE_IME;
             }
             break;
@@ -1757,7 +1757,7 @@ namespace Windows
                 ime_after_update = AfterFolderNameCallback;
                 ime_cancelled = CancelActionCallBack;
                 ime_callback = SingleValueImeCallback;
-                Dialog::initImeDialog(lang_strings[STR_RENAME], editor_text, 128, SwkbdType_Normal, 0, 0);
+                Dialog::initImeDialog(lang_strings[STR_RENAME], editor_text, 128, SwkbdType_All, 0, 0);
                 gui_mode = GUI_MODE_IME;
             }
             break;
@@ -1771,7 +1771,7 @@ namespace Windows
                 ime_after_update = AfterFolderNameCallback;
                 ime_cancelled = CancelActionCallBack;
                 ime_callback = SingleValueImeCallback;
-                Dialog::initImeDialog(lang_strings[STR_RENAME], editor_text, 128, SwkbdType_Normal, 0, 0);
+                Dialog::initImeDialog(lang_strings[STR_RENAME], editor_text, 128, SwkbdType_All, 0, 0);
                 gui_mode = GUI_MODE_IME;
             }
             break;
@@ -1888,7 +1888,7 @@ namespace Windows
             ime_callback = SingleValueImeCallback;
             ime_after_update = AfterRemoteNativeFilterCallback;
             ime_cancelled = AfterRemoteNativeFilterCancelCallback;
-            Dialog::initImeDialog(lang_strings[STR_FILTER], remote_filter, 31, SwkbdType_Normal, 0, 0);
+            Dialog::initImeDialog(lang_strings[STR_FILTER], remote_filter, 31, SwkbdType_All, 0, 0);
             gui_mode = GUI_MODE_IME;
             selected_action = ACTION_NONE;
             break;
