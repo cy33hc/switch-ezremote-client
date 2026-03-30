@@ -16,7 +16,6 @@ typedef const char cchr;
 #endif
 
 #ifndef __cplusplus
-typedef char bool;
 #define true 1
 #define TRUE 1
 #define false 0
