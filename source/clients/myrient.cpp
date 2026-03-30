@@ -206,6 +206,11 @@ std::vector<DirEntry> MyrientClient::ListDir(const std::string &path)
                 }
 
                 lxb_dom_collection_destroy(td_collection, true);
+                if (strcmp(entry.name, "..") != 0 && strcmp(entry.name, ".") != 0)
+                {
+                    out.push_back(entry);
+                }
+
                 out.push_back(entry);
             }
 
