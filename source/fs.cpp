@@ -507,6 +507,9 @@ namespace FS
         if (from.compare(to) == 0)
             return true;
 
+        if (FileExists(to))
+            Rm(to);
+
         errno = 0;
         int ret = rename(from.c_str(), to.c_str());
         if (ret != 0 && (errno == EXDEV || errno == EEXIST))
